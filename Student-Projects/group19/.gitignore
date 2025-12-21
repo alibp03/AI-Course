@@ -1,0 +1,31 @@
+# --- Security & Environment ---
+.env
+.env.local
+.env.*.local
+
+# --- Dependencies ---
+/vendor/
+
+# --- Logs & Storage ---
+/storage/*.log
+/storage/cache/*
+/storage/sessions/*
+/storage/temp/*
+!/storage/.gitignore
+
+# --- IDE & Editor Settings ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Testing & Coverage ---
+.phpunit.result.cache
+/tests/_output/
+/tests/_support/_generated/
+
+# --- OS Specific ---
+ehthumbs.db
+Icon?

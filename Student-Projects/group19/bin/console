@@ -1,0 +1,125 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Emotipal CLI Entry Point
+ * * This script handles all command-line operations for the Psychometric Platform.
+ * Usage: php bin/console [command] [arguments]
+ */
+
+// 1. Load Composer Autoloader
+$autoloadPath = __DIR__ . '/../vendor/autoload.php';
+
+if (!file_exists($autoloadPath)) {
+    fwrite(STDERR, "\033[31m[Error] Vendor directory not found. Please run 'composer install' first.\033[0m" . PHP_EOL);
+    exit(1);
+}
+
+require $autoloadPath;
+
+use App\Core\Database; 
+use Throwable;
+
+// 2. Define Console Colors
+const COLOR_RESET = "\033[0m";
+const COLOR_GREEN = "\033[32m";
+const COLOR_RED   = "\033[31m";
+const COLOR_YELLOW = "\033[33m";
+const COLOR_BLUE  = "\033[34m";
+
+// 3. Helper Functions
+function success(string $message): void {
+    echo COLOR_GREEN . "[OK] " . $message . COLOR_RESET . PHP_EOL;
+}
+
+function error(string $message): void {
+    fwrite(STDERR, COLOR_RED . "[ERROR] " . $message . COLOR_RESET . PHP_EOL);
+}
+
+function info(string $message): void {
+    echo COLOR_BLUE . "[INFO] " . $message . COLOR_RESET . PHP_EOL;
+}
+
+// 4. Main Execution Logic
+$command = $argv[1] ?? 'help';
+$args = array_slice($argv, 2);
+
+try {
+    $startTime = microtime(true);
+
+    match ($command) {
+        'migrate' => runMigration($args),
+        'seed' => runSeeder($args),
+        'broadcast' => runBroadcast($args),
+        'make:controller' => makeController($args),
+        'help' => showHelp(),
+        default => throw new \InvalidArgumentException("Command '{$command}' is not defined. Run 'php bin/console help' to see available commands.")
+    };
+
+    $endTime = microtime(true);
+    $executionTime = round(($endTime - $startTime) * 1000, 2);
+    
+
+    if ($command !== 'help') {
+        echo PHP_EOL . COLOR_YELLOW . "Execution time: {$executionTime}ms" . COLOR_RESET . PHP_EOL;
+    }
+
+} catch (Throwable $e) {
+    error($e->getMessage());
+    error("File: " . $e->getFile() . " on line " . $e->getLine());
+    exit(1);
+}
+
+// -----------------------------------------------------------------------------
+// Command Functions (Placeholders until Services are connected)
+// -----------------------------------------------------------------------------
+
+function runMigration(array $args): void {
+    info("Starting database migration...");
+    
+    // TODO: Connect to Database class here
+    // $db = Database::getInstance();
+    // $db->exec("...");
+    
+    sleep(1);
+    success("Database tables created successfully (Simulated).");
+}
+
+function runSeeder(array $args): void {
+    info("Seeding database with initial data (MBTI, Big5)...");
+    success("Seeders executed successfully.");
+}
+
+function runBroadcast(array $args): void {
+    if (empty($args)) {
+        throw new \InvalidArgumentException("Message content is required for broadcast.");
+    }
+    $message = implode(" ", $args);
+    info("Broadcasting message to all users: '{$message}'");
+    success("Message sent to queue.");
+}
+
+function makeController(array $args): void {
+    $name = $args[0] ?? null;
+    if (!$name) throw new \InvalidArgumentException("Controller name is required.");
+    success("Controller [{$name}] created.");
+}
+
+function showHelp(): void {
+    echo <<<HELP
+    
+    \033[36mEmotipal CLI Tool - v1.0.0\033[0m
+    
+    \033[33mUsage:\033[0m php bin/console [command] [arguments]
+
+    \033[32mAvailable Commands:\033[0m
+      \033[32mmigrate\033[0m           Run database migrations (Create Tables)
+      \033[32mseed\033[0m              Populate database with default tests
+      \033[32mbroadcast [msg]\033[0m   Send a message to all users
+      \033[32mmake:controller\033[0m   Create a new controller class
+      \033[32mhelp\033[0m              Show this help message
+
+    HELP;
+}
