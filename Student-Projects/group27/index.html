@@ -1,0 +1,2553 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سیستم مدیریت بیمارستان</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            box-sizing: border-box;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15);
+        }
+        
+        .specialty-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .specialty-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .specialty-selected {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            box-shadow: 0 4px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+        
+        .tab-inactive {
+            background-color: #f8fafc;
+            color: #64748b;
+        }
+        
+        .tab-inactive:hover {
+            background-color: #e2e8f0;
+        }
+        
+        .ai-tab-active {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            color: white;
+            box-shadow: 0 4px 15px -3px rgba(124, 58, 237, 0.4);
+        }
+        
+        .ai-tab-inactive {
+            background-color: #f8fafc;
+            color: #64748b;
+        }
+        
+        .ai-tab-inactive:hover {
+            background-color: #e2e8f0;
+        }
+        
+        .ai-feature-content {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="bg-gray-50 min-h-full"><!-- Header -->
+  <header class="gradient-bg text-white py-8 shadow-xl">
+   <div class="container mx-auto px-6">
+    <div class="flex items-center justify-between">
+     <div class="flex items-center space-x-6 space-x-reverse">
+      <div class="text-5xl">
+       🏥
+      </div>
+      <div>
+       <h1 id="system-title" class="text-4xl font-bold mb-2">سیستم مدیریت بیمارستان</h1>
+       <p id="hospital-name" class="text-xl opacity-90">بیمارستان امام خمینی</p>
+      </div>
+     </div>
+     <div class="text-left">
+      <div class="text-lg font-semibold mb-1">
+       اورژانس: <span id="emergency-phone">115</span>
+      </div>
+      <div class="text-sm opacity-75" id="current-time"></div>
+     </div>
+    </div>
+   </div>
+  </header><!-- Navigation -->
+  <nav class="bg-white shadow-lg border-b">
+   <div class="container mx-auto px-6">
+    <div class="flex space-x-2 space-x-reverse py-2"><button onclick="showSection('home')" id="tab-home" class="tab-active px-6 py-4 font-semibold rounded-lg transition-all"> 🏠 صفحه اصلی </button> <button onclick="showSection('clinics')" id="tab-clinics" class="tab-inactive px-6 py-4 font-semibold rounded-lg transition-all"> 🏥 درمانگاه‌ها </button> <button onclick="showSection('appointments')" id="tab-appointments" class="tab-inactive px-6 py-4 font-semibold rounded-lg transition-all"> 📅 نوبت‌دهی </button> <button onclick="showSection('ai-consultation')" id="tab-ai-consultation" class="tab-inactive px-6 py-4 font-semibold rounded-lg transition-all"> 🤖 مشاوره هوشمند </button> <button onclick="showSection('records')" id="tab-records" class="tab-inactive px-6 py-4 font-semibold rounded-lg transition-all"> 📋 سوابق </button>
+    </div>
+   </div>
+  </nav>
+  <div class="container mx-auto px-6 py-8"><!-- Home Section -->
+   <div id="home-section" class="section-content">
+    <div class="text-center mb-12">
+     <h2 class="text-4xl font-bold text-gray-800 mb-4">به سیستم مدیریت بیمارستان خوش آمدید</h2>
+     <p class="text-xl text-gray-600">بهترین خدمات پزشکی را از ما دریافت کنید</p>
+    </div><!-- Quick Actions -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+     <div class="card-hover bg-white rounded-xl shadow-lg p-6 text-center cursor-pointer" onclick="showSection('appointments')">
+      <div class="text-4xl mb-4">
+       📅
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">رزرو نوبت</h3>
+      <p class="text-gray-600">نوبت خود را با متخصصان رزرو کنید</p>
+     </div>
+     <div class="card-hover bg-white rounded-xl shadow-lg p-6 text-center cursor-pointer" onclick="showSection('clinics')">
+      <div class="text-4xl mb-4">
+       🏥
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">درمانگاه‌ها</h3>
+      <p class="text-gray-600">مشاهده تخصص‌ها و پزشکان</p>
+     </div>
+     <div class="card-hover bg-white rounded-xl shadow-lg p-6 text-center cursor-pointer" onclick="showSection('ai-consultation')">
+      <div class="text-4xl mb-4">
+       🤖
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">مشاوره هوشمند</h3>
+      <p class="text-gray-600">مشاوره رایگان با هوش مصنوعی</p>
+     </div>
+     <div class="card-hover bg-white rounded-xl shadow-lg p-6 text-center cursor-pointer" onclick="showSection('records')">
+      <div class="text-4xl mb-4">
+       📋
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">سوابق پزشکی</h3>
+      <p class="text-gray-600">مشاهده تاریخچه مراجعات</p>
+     </div>
+     <div class="card-hover bg-white rounded-xl shadow-lg p-6 text-center">
+      <div class="text-4xl mb-4">
+       🚨
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">اورژانس</h3>
+      <p class="text-gray-600">تماس فوری: <span id="emergency-display">115</span></p>
+     </div>
+    </div><!-- Hospital Stats -->
+    <div class="bg-white rounded-xl shadow-lg p-8 mb-12">
+     <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">آمار بیمارستان</h3>
+     <div class="grid md:grid-cols-4 gap-6 text-center">
+      <div>
+       <div class="text-3xl font-bold text-blue-600 mb-2">
+        12
+       </div>
+       <div class="text-gray-600">
+        تخصص پزشکی
+       </div>
+      </div>
+      <div>
+       <div class="text-3xl font-bold text-green-600 mb-2">
+        48
+       </div>
+       <div class="text-gray-600">
+        پزشک متخصص
+       </div>
+      </div>
+      <div>
+       <div class="text-3xl font-bold text-purple-600 mb-2">
+        24/7
+       </div>
+       <div class="text-gray-600">
+        خدمات اورژانس
+       </div>
+      </div>
+      <div>
+       <div class="text-3xl font-bold text-orange-600 mb-2" id="total-records">
+        0
+       </div>
+       <div class="text-gray-600">
+        بیمار ثبت شده
+       </div>
+      </div>
+     </div><!-- Symptom Checker Feature -->
+     <div id="ai-feature-symptom-checker" class="ai-feature-content hidden">
+      <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+       <div class="text-center mb-8">
+        <div class="text-6xl mb-4">
+         🔍
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">تشخیص هوشمند علائم</h3>
+        <p class="text-gray-600">علائم خود را وارد کنید تا احتمالی‌ترین علل و راه‌های درمان را بدانید</p>
+       </div>
+       <form id="symptomForm" class="space-y-6">
+        <div class="grid md:grid-cols-2 gap-6">
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">سن</label> <select id="symptomAge" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="child">کودک (زیر 12 سال)</option> <option value="teen">نوجوان (12-18 سال)</option> <option value="adult">بزرگسال (18-65 سال)</option> <option value="elderly">سالمند (بالای 65 سال)</option> </select>
+         </div>
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">جنسیت</label> <select id="symptomGender" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="male">مرد</option> <option value="female">زن</option> </select>
+         </div>
+        </div>
+        <div><label class="block text-sm font-semibold text-gray-700 mb-4">علائم اصلی (حداقل یکی انتخاب کنید)</label>
+         <div class="grid md:grid-cols-3 gap-3" id="symptom-checkboxes"><!-- Symptoms will be loaded here -->
+         </div>
+        </div>
+        <div><label for="symptomDuration" class="block text-sm font-semibold text-gray-700 mb-2">مدت زمان علائم</label> <select id="symptomDuration" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="hours">چند ساعت</option> <option value="1-2days">1-2 روز</option> <option value="3-7days">3-7 روز</option> <option value="1-2weeks">1-2 هفته</option> <option value="months">چند ماه</option> </select>
+        </div>
+        <div><label for="symptomSeverity" class="block text-sm font-semibold text-gray-700 mb-2">شدت علائم</label>
+         <div class="flex items-center space-x-4 space-x-reverse"><input type="range" id="symptomSeverity" min="1" max="10" value="5" class="flex-1"> <span id="severityValue" class="text-lg font-bold text-blue-600">5</span> <span class="text-sm text-gray-600">(1: خفیف - 10: شدید)</span>
+         </div>
+        </div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition-all"> 🔍 تحلیل علائم </button>
+       </form>
+       <div id="symptom-results" class="hidden mt-8 p-6 bg-gray-50 rounded-lg"><!-- Results will be shown here -->
+       </div>
+      </div>
+     </div><!-- Drug Interaction Checker -->
+     <div id="ai-feature-drug-interaction" class="ai-feature-content hidden">
+      <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+       <div class="text-center mb-8">
+        <div class="text-6xl mb-4">
+         💊
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">بررسی تداخل دارویی</h3>
+        <p class="text-gray-600">داروهای مصرفی خود را وارد کنید تا تداخلات احتمالی بررسی شود</p>
+       </div>
+       <div class="space-y-6">
+        <div><label class="block text-sm font-semibold text-gray-700 mb-2">افزودن دارو</label>
+         <div class="flex space-x-3 space-x-reverse"><input type="text" id="drugInput" placeholder="نام دارو را وارد کنید..." class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <button onclick="addDrug()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all"> ➕ افزودن </button>
+         </div>
+        </div>
+        <div id="drug-list" class="space-y-3"><!-- Added drugs will appear here -->
+        </div><button onclick="checkDrugInteractions()" id="checkInteractionBtn" class="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition-all disabled:bg-gray-400" disabled> 🔍 بررسی تداخلات </button>
+        <div id="interaction-results" class="hidden"><!-- Interaction results will be shown here -->
+        </div>
+       </div>
+      </div>
+     </div><!-- Health Tips Generator -->
+     <div id="ai-feature-health-tips" class="ai-feature-content hidden">
+      <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+       <div class="text-center mb-8">
+        <div class="text-6xl mb-4">
+         💡
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">توصیه‌های شخصی‌سازی شده</h3>
+        <p class="text-gray-600">بر اساس سن، جنسیت و شرایط خاص، توصیه‌های سلامت دریافت کنید</p>
+       </div>
+       <form id="healthTipsForm" class="space-y-6">
+        <div class="grid md:grid-cols-3 gap-6">
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">سن</label> <input type="number" id="tipsAge" min="1" max="120" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+         </div>
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">جنسیت</label> <select id="tipsGender" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="male">مرد</option> <option value="female">زن</option> </select>
+         </div>
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">سطح فعالیت</label> <select id="tipsActivity" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="low">کم (کمتر از 2 ساعت در هفته)</option> <option value="moderate">متوسط (2-5 ساعت در هفته)</option> <option value="high">زیاد (بیش از 5 ساعت در هفته)</option> </select>
+         </div>
+        </div>
+        <div><label class="block text-sm font-semibold text-gray-700 mb-4">شرایط خاص (اختیاری)</label>
+         <div class="grid md:grid-cols-2 gap-3"><label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="diabetes" class="condition-checkbox"> <span>دیابت</span> </label> <label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="hypertension" class="condition-checkbox"> <span>فشار خون بالا</span> </label> <label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="heart" class="condition-checkbox"> <span>بیماری قلبی</span> </label> <label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="pregnancy" class="condition-checkbox"> <span>بارداری</span> </label>
+         </div>
+        </div><button type="submit" class="w-full bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-all"> 💡 دریافت توصیه‌ها </button>
+       </form>
+       <div id="health-tips-results" class="hidden mt-8"><!-- Health tips will be shown here -->
+       </div>
+      </div>
+     </div><!-- Appointment Suggestion -->
+     <div id="ai-feature-appointment-suggest" class="ai-feature-content hidden">
+      <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+       <div class="text-center mb-8">
+        <div class="text-6xl mb-4">
+         📅
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">پیشنهاد تخصص مناسب</h3>
+        <p class="text-gray-600">بر اساس علائم شما، مناسب‌ترین تخصص و پزشک را پیشنهاد می‌دهیم</p>
+       </div>
+       <form id="suggestionForm" class="space-y-6">
+        <div><label for="suggestionSymptoms" class="block text-sm font-semibold text-gray-700 mb-2">علائم و مشکل خود را شرح دهید</label> <textarea id="suggestionSymptoms" rows="4" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="مثال: سردرد مداوم، حساسیت به نور، تهوع..."></textarea>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6">
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">اولویت زمانی</label> <select id="suggestionUrgency" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="routine">معمولی (تا 2 هفته)</option> <option value="urgent">فوری (تا 3 روز)</option> <option value="emergency">اورژانسی (همین امروز)</option> </select>
+         </div>
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">سابقه مراجعه</label> <select id="suggestionHistory" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="first">اولین بار</option> <option value="followup">پیگیری درمان</option> <option value="second-opinion">نظر دوم</option> </select>
+         </div>
+        </div><button type="submit" class="w-full bg-purple-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-purple-700 transition-all"> 🎯 دریافت پیشنهاد </button>
+       </form>
+       <div id="suggestion-results" class="hidden mt-8"><!-- Suggestions will be shown here -->
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div><!-- Clinics Section -->
+  <div id="clinics-section" class="section-content hidden">
+   <div class="text-center mb-12">
+    <h2 class="text-4xl font-bold text-gray-800 mb-4">🏥 درمانگاه‌های تخصصی</h2>
+    <p class="text-xl text-gray-600">بهترین متخصصان در خدمت شما</p>
+   </div>
+   <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" id="clinics-grid"><!-- Clinics will be loaded here -->
+   </div>
+  </div><!-- Appointments Section -->
+  <div id="appointments-section" class="section-content hidden">
+   <div class="text-center mb-12">
+    <h2 class="text-4xl font-bold text-gray-800 mb-4">📅 رزرو نوبت</h2>
+    <p class="text-xl text-gray-600">نوبت خود را با بهترین متخصصان رزرو کنید</p>
+   </div><!-- Step 1: Specialty Selection -->
+   <div id="step-specialty" class="bg-white rounded-xl shadow-lg p-8 mb-8">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">مرحله ۱: انتخاب تخصص</h3>
+    <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-6" id="specialty-selection"><!-- Specialties will be loaded here -->
+    </div>
+   </div><!-- Step 2: Doctor Selection -->
+   <div id="step-doctor" class="bg-white rounded-xl shadow-lg p-8 mb-8 hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">مرحله ۲: انتخاب پزشک</h3>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="doctor-selection"><!-- Doctors will be loaded here -->
+    </div>
+   </div><!-- Step 3: Appointment Form -->
+   <div id="step-form" class="bg-white rounded-xl shadow-lg p-8 mb-8 hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">مرحله ۳: تکمیل اطلاعات</h3>
+    <form id="appointmentForm" class="space-y-6">
+     <div class="grid md:grid-cols-2 gap-6">
+      <div><label for="patientName" class="block text-sm font-semibold text-gray-700 mb-2">نام و نام خانوادگی *</label> <input type="text" id="patientName" name="patientName" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+      </div>
+      <div><label for="patientPhone" class="block text-sm font-semibold text-gray-700 mb-2">شماره تماس *</label> <input type="tel" id="patientPhone" name="patientPhone" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+      </div>
+     </div>
+     <div class="grid md:grid-cols-2 gap-6">
+      <div><label for="patientAge" class="block text-sm font-semibold text-gray-700 mb-2">سن *</label> <input type="number" id="patientAge" name="patientAge" required min="1" max="120" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+      </div>
+      <div><label for="appointmentDate" class="block text-sm font-semibold text-gray-700 mb-2">تاریخ مراجعه *</label> <input type="date" id="appointmentDate" name="appointmentDate" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+      </div>
+     </div>
+     <div><label class="block text-sm font-semibold text-gray-700 mb-4">انتخاب ساعت *</label>
+      <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3" id="time-slots"><!-- Time slots will be loaded here -->
+      </div>
+     </div>
+     <div><label for="appointmentSymptoms" class="block text-sm font-semibold text-gray-700 mb-2">علت مراجعه</label> <textarea id="appointmentSymptoms" name="appointmentSymptoms" rows="4" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" placeholder="علائم یا دلیل مراجعه خود را بنویسید..."></textarea>
+     </div>
+     <div class="flex justify-center space-x-4 space-x-reverse"><button type="submit" id="bookAppointmentBtn" class="bg-green-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-all shadow-lg"> ✅ تایید و رزرو نوبت </button> <button type="button" onclick="resetAppointment()" class="bg-gray-600 text-white px-6 py-4 rounded-lg font-bold hover:bg-gray-700 transition-all"> 🔄 شروع مجدد </button>
+     </div>
+    </form>
+   </div>
+  </div><!-- AI Consultation Section -->
+  <div id="ai-consultation-section" class="section-content hidden">
+   <div class="text-center mb-12">
+    <h2 class="text-4xl font-bold text-gray-800 mb-4">🤖 مشاوره هوشمند پزشکی</h2>
+    <p class="text-xl text-gray-600">مشاوره رایگان و فوری با هوش مصنوعی درباره علائم و بیماری‌ها</p>
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6 max-w-4xl mx-auto">
+     <p class="text-yellow-800 font-semibold">⚠️ توجه: این مشاوره جایگزین ویزیت پزشک نیست و صرفاً جهت اطلاع‌رسانی اولیه است</p>
+    </div>
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mt-4 max-w-4xl mx-auto">
+     <div class="flex items-center space-x-3 space-x-reverse mb-2"><span class="text-2xl">✅</span>
+      <h4 class="font-bold text-green-800">هوش مصنوعی فعال است</h4>
+     </div>
+     <p class="text-green-700 text-sm mb-2">سیستم به OpenAI GPT-3.5 متصل شده و آماده پاسخگویی هوشمند است</p>
+     <div class="bg-white rounded p-3 text-xs font-mono text-gray-700">
+      <div>
+       ✓ OpenAI API: فعال
+      </div>
+      <div>
+       ✓ مدل: GPT-3.5-turbo
+      </div>
+      <div>
+       ✓ زبان: فارسی
+      </div>
+     </div>
+     <p class="text-green-600 text-xs mt-2">حالا می‌توانید سوالات پزشکی خود را مطرح کنید و پاسخ‌های هوشمند دریافت کنید</p>
+    </div>
+   </div><!-- AI Features Tabs -->
+   <div class="max-w-6xl mx-auto mb-8">
+    <div class="flex flex-wrap justify-center space-x-2 space-x-reverse mb-8"><button onclick="showAIFeature('chat')" id="ai-tab-chat" class="ai-tab-active px-6 py-3 font-semibold rounded-lg transition-all"> 💬 چت هوشمند </button> <button onclick="showAIFeature('symptom-checker')" id="ai-tab-symptom-checker" class="ai-tab-inactive px-6 py-3 font-semibold rounded-lg transition-all"> 🔍 تشخیص علائم </button> <button onclick="showAIFeature('drug-interaction')" id="ai-tab-drug-interaction" class="ai-tab-inactive px-6 py-3 font-semibold rounded-lg transition-all"> 💊 تداخل دارویی </button> <button onclick="showAIFeature('health-tips')" id="ai-tab-health-tips" class="ai-tab-inactive px-6 py-3 font-semibold rounded-lg transition-all"> 💡 توصیه‌های سلامت </button> <button onclick="showAIFeature('appointment-suggest')" id="ai-tab-appointment-suggest" class="ai-tab-inactive px-6 py-3 font-semibold rounded-lg transition-all"> 📅 پیشنهاد تخصص </button>
+    </div>
+   </div><!-- AI Feature Content -->
+   <div class="max-w-6xl mx-auto"><!-- Chat Feature -->
+    <div id="ai-feature-chat" class="ai-feature-content">
+     <div class="max-w-4xl mx-auto"><!-- Chat Container -->
+      <div class="bg-white rounded-xl shadow-lg mb-6">
+       <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-xl">
+        <div class="flex items-center space-x-4 space-x-reverse">
+         <div class="text-3xl">
+          🤖
+         </div>
+         <div>
+          <h3 class="text-xl font-bold">دستیار هوشمند پزشکی</h3>
+          <p class="text-blue-100">آماده پاسخگویی به سوالات شما</p>
+         </div>
+        </div>
+       </div>
+       <div id="chat-messages" class="p-6 h-96 overflow-y-auto bg-gray-50">
+        <div class="flex items-start space-x-3 space-x-reverse mb-4">
+         <div class="text-2xl">
+          🤖
+         </div>
+         <div class="bg-white rounded-lg p-4 shadow-sm max-w-md">
+          <p class="text-gray-800">سلام! من دستیار هوشمند پزشکی هستم. علائم یا مشکل سلامتی خود را برای من توضیح دهید تا بتوانم راهنمایی اولیه ارائه دهم.</p>
+         </div>
+        </div>
+       </div>
+       <div class="p-6 border-t bg-white rounded-b-xl">
+        <form id="consultationForm" class="flex space-x-3 space-x-reverse"><input type="text" id="userMessage" placeholder="علائم یا سوال خود را بنویسید..." class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"> <button type="submit" id="sendMessageBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all"> 📤 ارسال </button>
+        </form>
+       </div>
+      </div><!-- Quick Consultation Topics -->
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+       <h3 class="text-xl font-bold text-gray-800 mb-4">موضوعات پرتکرار</h3>
+       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"><button onclick="quickConsultation('سردرد')" class="text-right p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all">
+         <div class="text-2xl mb-2">
+          🤕
+         </div>
+         <div class="font-semibold text-gray-800">
+          سردرد
+         </div>
+         <div class="text-sm text-gray-600">
+          انواع سردرد و علل آن
+         </div></button> <button onclick="quickConsultation('تب')" class="text-right p-4 bg-red-50 hover:bg-red-100 rounded-lg transition-all">
+         <div class="text-2xl mb-2">
+          🌡️
+         </div>
+         <div class="font-semibold text-gray-800">
+          تب و لرز
+         </div>
+         <div class="text-sm text-gray-600">
+          علل تب و راه‌های کنترل
+         </div></button> <button onclick="quickConsultation('سرفه')" class="text-right p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-all">
+         <div class="text-2xl mb-2">
+          😷
+         </div>
+         <div class="font-semibold text-gray-800">
+          سرفه
+         </div>
+         <div class="text-sm text-gray-600">
+          انواع سرفه و درمان
+         </div></button> <button onclick="quickConsultation('درد شکم')" class="text-right p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-all">
+         <div class="text-2xl mb-2">
+          🤢
+         </div>
+         <div class="font-semibold text-gray-800">
+          درد شکم
+         </div>
+         <div class="text-sm text-gray-600">
+          علل درد شکم
+         </div></button> <button onclick="quickConsultation('خستگی')" class="text-right p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-all">
+         <div class="text-2xl mb-2">
+          😴
+         </div>
+         <div class="font-semibold text-gray-800">
+          خستگی
+         </div>
+         <div class="text-sm text-gray-600">
+          علل خستگی مداوم
+         </div></button> <button onclick="quickConsultation('درد مفاصل')" class="text-right p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all">
+         <div class="text-2xl mb-2">
+          🦴
+         </div>
+         <div class="font-semibold text-gray-800">
+          درد مفاصل
+         </div>
+         <div class="text-sm text-gray-600">
+          مشکلات مفاصل و استخوان
+         </div></button>
+       </div>
+      </div><!-- Emergency Warning -->
+      <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+       <div class="flex items-center space-x-3 space-x-reverse mb-4">
+        <div class="text-3xl">
+         🚨
+        </div>
+        <h3 class="text-xl font-bold text-red-800">موارد اورژانسی</h3>
+       </div>
+       <p class="text-red-700 mb-4">در صورت وجود این علائم، فوراً با اورژانس تماس بگیرید:</p>
+       <ul class="text-red-700 space-y-2">
+        <li>• درد شدید قفسه سینه</li>
+        <li>• تنگی نفس شدید</li>
+        <li>• از دست دادن هوشیاری</li>
+        <li>• خونریزی شدید</li>
+        <li>• درد شدید شکم</li>
+        <li>• علائم سکته مغزی (اختلال در صحبت، فلج)</li>
+       </ul>
+       <div class="mt-4 text-center"><span class="text-2xl font-bold text-red-800">شماره اورژانس: <span id="emergency-consultation">115</span></span>
+       </div>
+      </div><!-- Symptom Checker Feature -->
+      <div id="ai-feature-symptom-checker" class="ai-feature-content hidden">
+       <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+        <div class="text-center mb-8">
+         <div class="text-6xl mb-4">
+          🔍
+         </div>
+         <h3 class="text-2xl font-bold text-gray-800 mb-2">تشخیص هوشمند علائم</h3>
+         <p class="text-gray-600">علائم خود را وارد کنید تا احتمالی‌ترین علل و راه‌های درمان را بدانید</p>
+        </div>
+        <form id="symptomForm" class="space-y-6">
+         <div class="grid md:grid-cols-2 gap-6">
+          <div><label class="block text-sm font-semibold text-gray-700 mb-2">سن</label> <select id="symptomAge" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="child">کودک (زیر 12 سال)</option> <option value="teen">نوجوان (12-18 سال)</option> <option value="adult">بزرگسال (18-65 سال)</option> <option value="elderly">سالمند (بالای 65 سال)</option> </select>
+          </div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-2">جنسیت</label> <select id="symptomGender" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="male">مرد</option> <option value="female">زن</option> </select>
+          </div>
+         </div>
+         <div><label class="block text-sm font-semibold text-gray-700 mb-4">علائم اصلی (حداقل یکی انتخاب کنید)</label>
+          <div class="grid md:grid-cols-3 gap-3" id="symptom-checkboxes"><!-- Symptoms will be loaded here -->
+          </div>
+         </div>
+         <div><label for="symptomDuration" class="block text-sm font-semibold text-gray-700 mb-2">مدت زمان علائم</label> <select id="symptomDuration" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="hours">چند ساعت</option> <option value="1-2days">1-2 روز</option> <option value="3-7days">3-7 روز</option> <option value="1-2weeks">1-2 هفته</option> <option value="months">چند ماه</option> </select>
+         </div>
+         <div><label for="symptomSeverity" class="block text-sm font-semibold text-gray-700 mb-2">شدت علائم</label>
+          <div class="flex items-center space-x-4 space-x-reverse"><input type="range" id="symptomSeverity" min="1" max="10" value="5" class="flex-1"> <span id="severityValue" class="text-lg font-bold text-blue-600">5</span> <span class="text-sm text-gray-600">(1: خفیف - 10: شدید)</span>
+          </div>
+         </div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition-all"> 🔍 تحلیل علائم </button>
+        </form>
+        <div id="symptom-results" class="hidden mt-8 p-6 bg-gray-50 rounded-lg"><!-- Results will be shown here -->
+        </div>
+       </div>
+      </div><!-- Drug Interaction Checker -->
+      <div id="ai-feature-drug-interaction" class="ai-feature-content hidden">
+       <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+        <div class="text-center mb-8">
+         <div class="text-6xl mb-4">
+          💊
+         </div>
+         <h3 class="text-2xl font-bold text-gray-800 mb-2">بررسی تداخل دارویی</h3>
+         <p class="text-gray-600">داروهای مصرفی خود را وارد کنید تا تداخلات احتمالی بررسی شود</p>
+        </div>
+        <div class="space-y-6">
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">افزودن دارو</label>
+          <div class="flex space-x-3 space-x-reverse"><input type="text" id="drugInput" placeholder="نام دارو را وارد کنید..." class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <button onclick="addDrug()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all"> ➕ افزودن </button>
+          </div>
+         </div>
+         <div id="drug-list" class="space-y-3"><!-- Added drugs will appear here -->
+         </div><button onclick="checkDrugInteractions()" id="checkInteractionBtn" class="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition-all disabled:bg-gray-400" disabled> 🔍 بررسی تداخلات </button>
+         <div id="interaction-results" class="hidden"><!-- Interaction results will be shown here -->
+         </div>
+        </div>
+       </div>
+      </div><!-- Health Tips Generator -->
+      <div id="ai-feature-health-tips" class="ai-feature-content hidden">
+       <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+        <div class="text-center mb-8">
+         <div class="text-6xl mb-4">
+          💡
+         </div>
+         <h3 class="text-2xl font-bold text-gray-800 mb-2">توصیه‌های شخصی‌سازی شده</h3>
+         <p class="text-gray-600">بر اساس سن، جنسیت و شرایط خاص، توصیه‌های سلامت دریافت کنید</p>
+        </div>
+        <form id="healthTipsForm" class="space-y-6">
+         <div class="grid md:grid-cols-3 gap-6">
+          <div><label class="block text-sm font-semibold text-gray-700 mb-2">سن</label> <input type="number" id="tipsAge" min="1" max="120" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-2">جنسیت</label> <select id="tipsGender" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="male">مرد</option> <option value="female">زن</option> </select>
+          </div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-2">سطح فعالیت</label> <select id="tipsActivity" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="">انتخاب کنید</option> <option value="low">کم (کمتر از 2 ساعت در هفته)</option> <option value="moderate">متوسط (2-5 ساعت در هفته)</option> <option value="high">زیاد (بیش از 5 ساعت در هفته)</option> </select>
+          </div>
+         </div>
+         <div><label class="block text-sm font-semibold text-gray-700 mb-4">شرایط خاص (اختیاری)</label>
+          <div class="grid md:grid-cols-2 gap-3"><label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="diabetes" class="condition-checkbox"> <span>دیابت</span> </label> <label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="hypertension" class="condition-checkbox"> <span>فشار خون بالا</span> </label> <label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="heart" class="condition-checkbox"> <span>بیماری قلبی</span> </label> <label class="flex items-center space-x-3 space-x-reverse"> <input type="checkbox" value="pregnancy" class="condition-checkbox"> <span>بارداری</span> </label>
+          </div>
+         </div><button type="submit" class="w-full bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-all"> 💡 دریافت توصیه‌ها </button>
+        </form>
+        <div id="health-tips-results" class="hidden mt-8"><!-- Health tips will be shown here -->
+        </div>
+       </div>
+      </div><!-- Appointment Suggestion -->
+      <div id="ai-feature-appointment-suggest" class="ai-feature-content hidden">
+       <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+        <div class="text-center mb-8">
+         <div class="text-6xl mb-4">
+          📅
+         </div>
+         <h3 class="text-2xl font-bold text-gray-800 mb-2">پیشنهاد تخصص مناسب</h3>
+         <p class="text-gray-600">بر اساس علائم شما، مناسب‌ترین تخصص و پزشک را پیشنهاد می‌دهیم</p>
+        </div>
+        <form id="suggestionForm" class="space-y-6">
+         <div><label for="suggestionSymptoms" class="block text-sm font-semibold text-gray-700 mb-2">علائم و مشکل خود را شرح دهید</label> <textarea id="suggestionSymptoms" rows="4" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="مثال: سردرد مداوم، حساسیت به نور، تهوع..."></textarea>
+         </div>
+         <div class="grid md:grid-cols-2 gap-6">
+          <div><label class="block text-sm font-semibold text-gray-700 mb-2">اولویت زمانی</label> <select id="suggestionUrgency" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="routine">معمولی (تا 2 هفته)</option> <option value="urgent">فوری (تا 3 روز)</option> <option value="emergency">اورژانسی (همین امروز)</option> </select>
+          </div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-2">سابقه مراجعه</label> <select id="suggestionHistory" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="first">اولین بار</option> <option value="followup">پیگیری درمان</option> <option value="second-opinion">نظر دوم</option> </select>
+          </div>
+         </div><button type="submit" class="w-full bg-purple-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-purple-700 transition-all"> 🎯 دریافت پیشنهاد </button>
+        </form>
+        <div id="suggestion-results" class="hidden mt-8"><!-- Suggestions will be shown here -->
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div><!-- Records Section -->
+   <div id="records-section" class="section-content hidden">
+    <div class="text-center mb-12">
+     <h2 class="text-4xl font-bold text-gray-800 mb-4">📋 سوابق بیماران</h2>
+     <p class="text-xl text-gray-600">مشاهده و مدیریت سوابق پزشکی</p>
+    </div><!-- Search and Filter -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+     <div class="flex flex-wrap items-center gap-4"><select id="recordFilter" class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <option value="all">همه سوابق</option> <option value="appointment">نوبت‌ها</option> </select> <input type="text" id="searchRecords" placeholder="جستجو در سوابق..." class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"> <button onclick="filterRecords()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all"> 🔍 جستجو </button>
+     </div>
+    </div><!-- Records List -->
+    <div id="records-list" class="space-y-6"><!-- Records will be loaded here -->
+    </div>
+   </div>
+  </div><!-- Footer -->
+  <footer class="bg-gray-900 text-white py-12 mt-16">
+   <div class="container mx-auto px-6">
+    <div class="text-center">
+     <h3 class="text-2xl font-bold mb-4">درباره بیمارستان</h3>
+     <div class="max-w-4xl mx-auto">
+      <p class="text-lg mb-6">بیمارستان نیکان با بیش از 30 سال تجربه در ارائه خدمات پزشکی، یکی از معتبرترین مراکز درمانی کشور محسوب می‌شود.</p>
+      <div class="grid md:grid-cols-3 gap-8 mt-8">
+       <div>
+        <h4 class="text-xl font-bold mb-3">📍 آدرس</h4>
+        <p class="text-gray-300">تهران، پونک، خیابان صبحدل<br>
+         دانشگاه آزاد واحد تهران مرکز</p>
+       </div>
+       <div>
+        <h4 class="text-xl font-bold mb-3">👩‍⚕️ مدیر عامل</h4>
+        <p class="text-gray-300">سرکار خانم دکتر مریم حاجی اسمعیلی</p>
+       </div>
+       <div>
+        <h4 class="text-xl font-bold mb-3">📞 تماس</h4>
+        <p class="text-gray-300">09016756070</p>
+        <p class="text-gray-300">اورژانس: <span id="footer-emergency">115</span></p>
+       </div>
+      </div>
+     </div>
+     <div class="border-t border-gray-700 mt-8 pt-8">
+      <p id="footer-text" class="text-gray-400">تمامی حقوق محفوظ است - سیستم مدیریت بیمارستان</p>
+     </div>
+    </div>
+   </div>
+  </footer>
+  <script>
+        // Global variables
+        let currentSection = 'home';
+        let selectedSpecialty = null;
+        let selectedDoctor = null;
+        let selectedTime = null;
+        let allRecords = [];
+        let currentAIFeature = 'chat';
+        let addedDrugs = [];
+
+        // Default configuration
+        const defaultConfig = {
+            hospital_name: "بیمارستان نیکان",
+            system_title: "سیستم مدیریت بیمارستان",
+            emergency_phone: "115",
+            footer_text: "تمامی حقوق محفوظ است - سیستم مدیریت بیمارستان"
+        };
+
+        // Specialties and doctors data
+        const specialtiesData = [
+            {
+                id: 'cardiology',
+                name: 'قلب و عروق',
+                icon: '❤️',
+                color: 'bg-red-50 border-red-200',
+                description: 'تشخیص و درمان بیماری‌های قلب و عروق',
+                doctors: [
+                    { id: 'dr1', name: 'دکتر احمد محمدی', experience: '15 سال', rating: '4.9', specialty: 'جراحی قلب' },
+                    { id: 'dr2', name: 'دکتر فاطمه رضایی', experience: '12 سال', rating: '4.8', specialty: 'قلب کودکان' }
+                ]
+            },
+            {
+                id: 'neurology',
+                name: 'مغز و اعصاب',
+                icon: '🧠',
+                color: 'bg-purple-50 border-purple-200',
+                description: 'تشخیص و درمان اختلالات سیستم عصبی',
+                doctors: [
+                    { id: 'dr3', name: 'دکتر علی حسینی', experience: '18 سال', rating: '4.9', specialty: 'صرع و تشنج' },
+                    { id: 'dr4', name: 'دکتر مریم کریمی', experience: '10 سال', rating: '4.7', specialty: 'سردرد و میگرن' }
+                ]
+            },
+            {
+                id: 'orthopedics',
+                name: 'ارتوپدی',
+                icon: '🦴',
+                color: 'bg-blue-50 border-blue-200',
+                description: 'جراحی و درمان استخوان و مفاصل',
+                doctors: [
+                    { id: 'dr5', name: 'دکتر محسن احمدی', experience: '20 سال', rating: '4.8', specialty: 'جراحی ستون فقرات' },
+                    { id: 'dr6', name: 'دکتر زهرا موسوی', experience: '14 سال', rating: '4.9', specialty: 'ارتوپدی کودکان' }
+                ]
+            },
+            {
+                id: 'dermatology',
+                name: 'پوست و مو',
+                icon: '🧴',
+                color: 'bg-green-50 border-green-200',
+                description: 'درمان بیماری‌های پوست، مو و ناخن',
+                doctors: [
+                    { id: 'dr7', name: 'دکتر سارا جعفری', experience: '8 سال', rating: '4.6', specialty: 'لیزر درمانی' },
+                    { id: 'dr8', name: 'دکتر رضا نوری', experience: '16 سال', rating: '4.8', specialty: 'جراحی پوست' }
+                ]
+            },
+            {
+                id: 'pediatrics',
+                name: 'کودکان',
+                icon: '👶',
+                color: 'bg-yellow-50 border-yellow-200',
+                description: 'مراقبت‌های پزشکی کودکان و نوجوانان',
+                doctors: [
+                    { id: 'dr9', name: 'دکتر لیلا صادقی', experience: '13 سال', rating: '4.9', specialty: 'غدد کودکان' },
+                    { id: 'dr10', name: 'دکتر حسن پور', experience: '11 سال', rating: '4.7', specialty: 'عفونی کودکان' }
+                ]
+            },
+            {
+                id: 'gynecology',
+                name: 'زنان و زایمان',
+                icon: '👩‍⚕️',
+                color: 'bg-pink-50 border-pink-200',
+                description: 'مراقبت‌های بهداشتی زنان و زایمان',
+                doctors: [
+                    { id: 'dr11', name: 'دکتر نسرین باقری', experience: '17 سال', rating: '4.8', specialty: 'جراحی زنان' },
+                    { id: 'dr12', name: 'دکتر مهناز رحیمی', experience: '19 سال', rating: '4.9', specialty: 'زایمان طبیعی' }
+                ]
+            },
+            {
+                id: 'ophthalmology',
+                name: 'چشم پزشکی',
+                icon: '👁️',
+                color: 'bg-indigo-50 border-indigo-200',
+                description: 'تشخیص و درمان بیماری‌های چشم',
+                doctors: [
+                    { id: 'dr13', name: 'دکتر امیر تقوی', experience: '12 سال', rating: '4.7', specialty: 'جراحی کاتاراکت' },
+                    { id: 'dr14', name: 'دکتر شیما فرهادی', experience: '9 سال', rating: '4.6', specialty: 'شبکیه چشم' }
+                ]
+            },
+            {
+                id: 'ent',
+                name: 'گوش و حلق و بینی',
+                icon: '👂',
+                color: 'bg-teal-50 border-teal-200',
+                description: 'درمان اختلالات گوش، حلق و بینی',
+                doctors: [
+                    { id: 'dr15', name: 'دکتر کامران زارعی', experience: '15 سال', rating: '4.8', specialty: 'جراحی بینی' },
+                    { id: 'dr16', name: 'دکتر نازنین مرادی', experience: '7 سال', rating: '4.5', specialty: 'اختلالات شنوایی' }
+                ]
+            },
+            {
+                id: 'psychiatry',
+                name: 'روانپزشکی',
+                icon: '🧘',
+                color: 'bg-gray-50 border-gray-200',
+                description: 'درمان اختلالات روانی و رفتاری',
+                doctors: [
+                    { id: 'dr17', name: 'دکتر محمد امینی', experience: '22 سال', rating: '4.9', specialty: 'اضطراب و افسردگی' },
+                    { id: 'dr18', name: 'دکتر الهام شریفی', experience: '14 سال', rating: '4.8', specialty: 'روانپزشکی کودک' }
+                ]
+            },
+            {
+                id: 'internal',
+                name: 'داخلی',
+                icon: '🩺',
+                color: 'bg-orange-50 border-orange-200',
+                description: 'تشخیص و درمان بیماری‌های داخلی',
+                doctors: [
+                    { id: 'dr19', name: 'دکتر حمید اکبری', experience: '25 سال', rating: '4.9', specialty: 'دیابت و غدد' },
+                    { id: 'dr20', name: 'دکتر طاهره یوسفی', experience: '16 سال', rating: '4.7', specialty: 'قلب و عروق داخلی' }
+                ]
+            },
+            {
+                id: 'surgery',
+                name: 'جراحی عمومی',
+                icon: '⚕️',
+                color: 'bg-red-50 border-red-200',
+                description: 'انجام جراحی‌های عمومی و تخصصی',
+                doctors: [
+                    { id: 'dr21', name: 'دکتر بهروز قاسمی', experience: '28 سال', rating: '4.9', specialty: 'جراحی لاپاراسکوپی' },
+                    { id: 'dr22', name: 'دکتر مینا خلیلی', experience: '13 سال', rating: '4.8', specialty: 'جراحی عمومی' }
+                ]
+            },
+            {
+                id: 'radiology',
+                name: 'رادیولوژی',
+                icon: '📡',
+                color: 'bg-blue-50 border-blue-200',
+                description: 'تصویربرداری پزشکی و تشخیص',
+                doctors: [
+                    { id: 'dr23', name: 'دکتر سعید مهدوی', experience: '18 سال', rating: '4.8', specialty: 'MRI و CT Scan' },
+                    { id: 'dr24', name: 'دکتر فریده اسماعیلی', experience: '11 سال', rating: '4.6', specialty: 'سونوگرافی' }
+                ]
+            }
+        ];
+
+        // Time slots
+        const timeSlots = [
+            '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+            '11:00', '11:30', '14:00', '14:30', '15:00', '15:30',
+            '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'
+        ];
+
+        // Symptoms database
+        const symptomsDatabase = [
+            { id: 'headache', name: 'سردرد', category: 'neurological' },
+            { id: 'fever', name: 'تب', category: 'general' },
+            { id: 'cough', name: 'سرفه', category: 'respiratory' },
+            { id: 'nausea', name: 'تهوع', category: 'digestive' },
+            { id: 'fatigue', name: 'خستگی', category: 'general' },
+            { id: 'joint-pain', name: 'درد مفاصل', category: 'musculoskeletal' },
+            { id: 'chest-pain', name: 'درد قفسه سینه', category: 'cardiac' },
+            { id: 'shortness-breath', name: 'تنگی نفس', category: 'respiratory' },
+            { id: 'dizziness', name: 'سرگیجه', category: 'neurological' },
+            { id: 'stomach-pain', name: 'درد شکم', category: 'digestive' },
+            { id: 'back-pain', name: 'کمردرد', category: 'musculoskeletal' },
+            { id: 'sore-throat', name: 'گلودرد', category: 'respiratory' }
+        ];
+
+        // Drug interactions database
+        const drugInteractions = {
+            'وارفارین': ['آسپرین', 'ایبوپروفن', 'آنتی‌بیوتیک‌ها'],
+            'آسپرین': ['وارفارین', 'متفورمین'],
+            'ایبوپروفن': ['وارفارین', 'لیزینوپریل'],
+            'متفورمین': ['آسپرین', 'فوروسماید'],
+            'لیزینوپریل': ['ایبوپروفن', 'اسپیرونولاکتون']
+        };
+
+        // Data handler for SDK
+        const dataHandler = {
+            onDataChanged(data) {
+                allRecords = data;
+                updateStats();
+                renderRecords();
+            }
+        };
+
+        // Initialize SDKs
+        async function initializeSDKs() {
+            if (window.dataSdk) {
+                const result = await window.dataSdk.init(dataHandler);
+                if (!result.isOk) {
+                    console.error("Failed to initialize data SDK");
+                }
+            }
+
+            if (window.elementSdk) {
+                await window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange: async (config) => {
+                        document.getElementById('system-title').textContent = config.system_title || defaultConfig.system_title;
+                        document.getElementById('hospital-name').textContent = config.hospital_name || defaultConfig.hospital_name;
+                        document.getElementById('emergency-phone').textContent = config.emergency_phone || defaultConfig.emergency_phone;
+                        document.getElementById('emergency-display').textContent = config.emergency_phone || defaultConfig.emergency_phone;
+                        document.getElementById('footer-emergency').textContent = config.emergency_phone || defaultConfig.emergency_phone;
+                        document.getElementById('emergency-consultation').textContent = config.emergency_phone || defaultConfig.emergency_phone;
+                        document.getElementById('footer-text').textContent = config.footer_text || defaultConfig.footer_text;
+                    },
+                    mapToCapabilities: (config) => ({
+                        recolorables: [],
+                        borderables: [],
+                        fontEditable: undefined,
+                        fontSizeable: undefined
+                    }),
+                    mapToEditPanelValues: (config) => new Map([
+                        ["hospital_name", config.hospital_name || defaultConfig.hospital_name],
+                        ["system_title", config.system_title || defaultConfig.system_title],
+                        ["emergency_phone", config.emergency_phone || defaultConfig.emergency_phone],
+                        ["footer_text", config.footer_text || defaultConfig.footer_text]
+                    ])
+                });
+            }
+        }
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('fa-IR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('current-time').textContent = timeString;
+        }
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('total-records').textContent = allRecords.length;
+        }
+
+        // AI Consultation responses database
+        const aiResponses = {
+            'سردرد': {
+                response: `سردرد می‌تواند علل مختلفی داشته باشد:
+
+🔹 **انواع سردرد:**
+• سردرد تنشی: شایع‌ترین نوع، معمولاً ناشی از استرس
+• میگرن: سردرد شدید همراه با حساسیت به نور
+• سردرد خوشه‌ای: درد شدید یک طرفه
+
+🔹 **علل احتمالی:**
+• کم‌آبی بدن
+• کمبود خواب
+• استرس و اضطراب
+• مشکلات بینایی
+• تغییرات هورمونی
+
+🔹 **توصیه‌های اولیه:**
+• آب کافی بنوشید
+• استراحت کنید
+• کمپرس سرد روی پیشانی
+• ماساژ ملایم گردن و شقیقه
+
+⚠️ **مراجعه فوری در صورت:**
+• سردرد ناگهانی و شدید
+• همراهی با تب بالا
+• اختلال در بینایی یا صحبت`,
+                followUp: ['درد شدت دارد؟', 'چند وقت است این مشکل دارید؟', 'علائم دیگری هم دارید؟']
+            },
+            'تب': {
+                response: `تب نشانه‌ای از مقاومت بدن در برابر عفونت است:
+
+🔹 **درجه‌بندی تب:**
+• تب خفیف: 37.5-38°C
+• تب متوسط: 38-39°C  
+• تب بالا: بالای 39°C
+
+🔹 **علل شایع:**
+• عفونت‌های ویروسی (سرماخوردگی، آنفولانزا)
+• عفونت‌های باکتریایی
+• التهابات
+• واکنش به دارو
+
+🔹 **مراقبت در منزل:**
+• آب و مایعات کافی بنوشید
+• استراحت کامل
+• لباس‌های سبک بپوشید
+• کمپرس ولرم روی پیشانی
+
+🔹 **داروهای تب‌بر:**
+• استامینوفن (مطابق دستور)
+• ایبوپروفن (برای بالغین)
+
+⚠️ **مراجعه فوری اگر:**
+• تب بالای 39.5°C
+• تشنج
+• تنگی نفس شدید
+• کاهش هوشیاری`,
+                followUp: ['تب چقدر است؟', 'علائم دیگری دارید؟', 'چه مدت است تب دارید؟']
+            },
+            'سرفه': {
+                response: `سرفه مکانیزم دفاعی بدن برای پاکسازی راه‌های تنفسی است:
+
+🔹 **انواع سرفه:**
+• سرفه خشک: بدون خلط
+• سرفه مولد: همراه با خلط
+• سرفه مزمن: بیش از 8 هفته
+
+🔹 **علل شایع:**
+• عفونت‌های تنفسی
+• آلرژی
+• ریفلاکس معده
+• آسم
+• مصرف برخی داروها
+
+🔹 **درمان خانگی:**
+• عسل (برای بالای 1 سال)
+• آب گرم با لیمو
+• بخور آب گرم
+• مایعات گرم فراوان
+
+🔹 **پیشگیری:**
+• دست‌ها را بشویید
+• از دود و آلودگی دوری کنید
+• ماسک در محیط‌های آلوده
+
+⚠️ **مراجعه فوری اگر:**
+• خلط خونی
+• تنگی نفس شدید
+• تب بالا همراه سرفه
+• سرفه بیش از 2 هفته`,
+                followUp: ['سرفه خشک است یا خلط دار؟', 'چه مدت است سرفه دارید؟', 'تب هم دارید؟']
+            },
+            'درد شکم': {
+                response: `درد شکم می‌تواند علل مختلفی داشته باشد:
+
+🔹 **محل درد:**
+• بالای شکم: معده، کبد، کیسه صفراء
+• وسط شکم: روده کوچک
+• پایین شکم: روده بزرگ، آپاندیس
+
+🔹 **علل شایع:**
+• سوء هاضمه
+• گاز معده
+• عفونت معده
+• استرس
+• مسمومیت غذایی
+
+🔹 **مراقبت اولیه:**
+• مایعات کافی بنوشید
+• غذاهای سبک مصرف کنید
+• کمپرس گرم روی شکم
+• استراحت کنید
+
+🔹 **اجتناب از:**
+• غذاهای چرب و تند
+• نوشیدنی‌های گازدار
+• مسکن‌های قوی
+
+⚠️ **اورژانس فوری:**
+• درد شدید و ناگهانی
+• استفراغ مداوم
+• تب بالا
+• خونریزی
+• سفتی شکم`,
+                followUp: ['درد کجای شکم است؟', 'چه مدت است درد دارید؟', 'استفراغ هم دارید؟']
+            },
+            'خستگی': {
+                response: `خستگی مداوم می‌تواند نشانه مشکلات مختلف باشد:
+
+🔹 **علل شایع:**
+• کمبود خواب
+• استرس مزمن
+• کم‌خونی
+• مشکلات تیروئید
+• دیابت
+• افسردگی
+
+🔹 **بهبود انرژی:**
+• خواب منظم 7-8 ساعت
+• ورزش منظم
+• تغذیه متعادل
+• مدیریت استرس
+• آب کافی بنوشید
+
+🔹 **تغذیه مناسب:**
+• صبحانه مقوی
+• میوه و سبزیجات
+• پروتئین کافی
+• اجتناب از قند زیاد
+
+🔹 **سبک زندگی:**
+• برنامه‌ریزی کار
+• استراحت‌های کوتاه
+• تکنیک‌های آرامش
+
+⚠️ **مراجعه پزشک اگر:**
+• خستگی بیش از 2 هفته
+• کاهش وزن غیرطبیعی
+• تب مداوم
+• تنگی نفس`,
+                followUp: ['چه مدت است خستگی دارید؟', 'خواب شما چطور است؟', 'علائم دیگری دارید؟']
+            },
+            'درد مفاصل': {
+                response: `درد مفاصل مشکل شایعی است که علل مختلف دارد:
+
+🔹 **علل اصلی:**
+• آرتروز (فرسایش مفصل)
+• آرتریت روماتوئید
+• نقرس
+• آسیب ورزشی
+• التهاب
+
+🔹 **مراقبت خانگی:**
+• استراحت مفصل آسیب‌دیده
+• کمپرس سرد (24 ساعت اول)
+• کمپرس گرم (بعد از 24 ساعت)
+• حرکات ملایم
+
+🔹 **ورزش مناسب:**
+• شنا
+• پیاده‌روی
+• یوگا
+• کشش عضلات
+
+🔹 **پیشگیری:**
+• حفظ وزن مناسب
+• ورزش منظم
+• تقویت عضلات
+• وضعیت صحیح بدن
+
+⚠️ **مراجعه فوری اگر:**
+• درد شدید و ناگهانی
+• تورم و قرمزی
+• محدودیت حرکت
+• تب همراه درد`,
+                followUp: ['کدام مفصل درد می‌کند؟', 'درد چه موقع بدتر می‌شود؟', 'تورم هم دارید؟']
+            }
+        };
+
+        // Show section
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                tab.className = 'tab-inactive px-6 py-4 font-semibold rounded-lg transition-all';
+            });
+
+            // Show selected section
+            document.getElementById(`${sectionName}-section`).classList.remove('hidden');
+            document.getElementById(`tab-${sectionName}`).className = 'tab-active px-6 py-4 font-semibold rounded-lg transition-all';
+
+            currentSection = sectionName;
+
+            // Load content based on section
+            if (sectionName === 'clinics') {
+                loadClinics();
+            } else if (sectionName === 'appointments') {
+                loadSpecialtySelection();
+            } else if (sectionName === 'records') {
+                renderRecords();
+            } else if (sectionName === 'ai-consultation') {
+                initializeChat();
+            }
+        }
+
+        // Load clinics
+        function loadClinics() {
+            const grid = document.getElementById('clinics-grid');
+            grid.innerHTML = specialtiesData.map(specialty => `
+                <div class="card-hover bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="text-4xl ml-4">${specialty.icon}</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">${specialty.name}</h3>
+                                <p class="text-gray-600 text-sm">${specialty.description}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <h4 class="font-semibold text-gray-700">پزشکان:</h4>
+                            ${specialty.doctors.map(doctor => `
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <div class="font-medium text-gray-800">${doctor.name}</div>
+                                        <div class="text-sm text-gray-600">${doctor.specialty}</div>
+                                        <div class="text-xs text-gray-500">${doctor.experience} تجربه</div>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="flex items-center">
+                                            <span class="text-yellow-500">⭐</span>
+                                            <span class="text-sm text-gray-600 mr-1">${doctor.rating}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <button onclick="bookWithSpecialty('${specialty.id}')" 
+                                class="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all">
+                            📅 رزرو نوبت
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Book with specialty
+        function bookWithSpecialty(specialtyId) {
+            showSection('appointments');
+            setTimeout(() => {
+                selectSpecialty(specialtyId);
+            }, 100);
+        }
+
+        // Load specialty selection
+        function loadSpecialtySelection() {
+            const grid = document.getElementById('specialty-selection');
+            grid.innerHTML = specialtiesData.map(specialty => `
+                <div class="specialty-card ${specialty.color} border-2 rounded-xl p-6 text-center" 
+                     onclick="selectSpecialty('${specialty.id}')">
+                    <div class="text-4xl mb-3">${specialty.icon}</div>
+                    <h4 class="font-bold text-gray-800 mb-2">${specialty.name}</h4>
+                    <p class="text-sm text-gray-600">${specialty.doctors.length} پزشک</p>
+                </div>
+            `).join('');
+        }
+
+        // Select specialty
+        function selectSpecialty(specialtyId) {
+            selectedSpecialty = specialtyId;
+            
+            // Update UI
+            document.querySelectorAll('.specialty-card').forEach(card => {
+                card.classList.remove('specialty-selected');
+            });
+            
+            const selectedCard = document.querySelector(`[onclick="selectSpecialty('${specialtyId}')"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('specialty-selected');
+            }
+
+            // Load doctors
+            loadDoctorSelection(specialtyId);
+            document.getElementById('step-doctor').classList.remove('hidden');
+            
+            // Scroll to doctor selection
+            document.getElementById('step-doctor').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Load doctor selection
+        function loadDoctorSelection(specialtyId) {
+            const specialty = specialtiesData.find(s => s.id === specialtyId);
+            const grid = document.getElementById('doctor-selection');
+            
+            grid.innerHTML = specialty.doctors.map(doctor => `
+                <div class="card-hover bg-white border-2 border-gray-200 rounded-xl p-6 cursor-pointer" 
+                     onclick="selectDoctor('${doctor.id}', '${doctor.name}')">
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <div class="text-4xl">👨‍⚕️</div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-lg">${doctor.name}</h4>
+                            <p class="text-gray-600 mb-1">${doctor.specialty}</p>
+                            <p class="text-sm text-gray-500">${doctor.experience} تجربه</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-yellow-500">⭐</span>
+                                <span class="text-sm text-gray-600 mr-1">${doctor.rating}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Select doctor
+        function selectDoctor(doctorId, doctorName) {
+            selectedDoctor = { id: doctorId, name: doctorName };
+            
+            // Update UI
+            document.querySelectorAll('#doctor-selection .card-hover').forEach(card => {
+                card.classList.remove('specialty-selected');
+            });
+            event.target.closest('.card-hover').classList.add('specialty-selected');
+
+            // Show form
+            document.getElementById('step-form').classList.remove('hidden');
+            loadTimeSlots();
+            
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentDate').min = today;
+            
+            // Scroll to form
+            document.getElementById('step-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Load time slots
+        function loadTimeSlots() {
+            const grid = document.getElementById('time-slots');
+            grid.innerHTML = timeSlots.map(time => `
+                <button type="button" class="px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-all" 
+                        onclick="selectTime('${time}')">
+                    ${time}
+                </button>
+            `).join('');
+        }
+
+        // Select time
+        function selectTime(time) {
+            selectedTime = time;
+            
+            // Update UI
+            document.querySelectorAll('#time-slots button').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('border-gray-300');
+            });
+            event.target.classList.add('bg-blue-600', 'text-white');
+            event.target.classList.remove('border-gray-300');
+        }
+
+        // Book appointment
+        async function bookAppointment(event) {
+            event.preventDefault();
+
+            if (!selectedSpecialty || !selectedDoctor || !selectedTime) {
+                showToast('لطفاً تمام مراحل را تکمیل کنید', 'error');
+                return;
+            }
+
+            if (allRecords.length >= 999) {
+                showToast('حداکثر تعداد رکورد (999) به حد نصاب رسیده است. لطفاً ابتدا برخی رکوردها را حذف کنید.', 'error');
+                return;
+            }
+
+            const formData = new FormData(event.target);
+            const btn = document.getElementById('bookAppointmentBtn');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner ml-2"></div> در حال رزرو...';
+
+            const specialty = specialtiesData.find(s => s.id === selectedSpecialty);
+            const appointmentData = {
+                patient_id: `A-${Date.now()}`,
+                name: formData.get('patientName'),
+                age: formData.get('patientAge'),
+                phone: formData.get('patientPhone'),
+                specialty: specialty.name,
+                doctor: selectedDoctor.name,
+                appointment_date: formData.get('appointmentDate'),
+                appointment_time: selectedTime,
+                symptoms: formData.get('appointmentSymptoms') || 'ذکر نشده',
+                type: 'appointment',
+                status: 'رزرو شده',
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                if (window.dataSdk) {
+                    const result = await window.dataSdk.create(appointmentData);
+                    if (result.isOk) {
+                        showToast('✅ نوبت با موفقیت رزرو شد!', 'success');
+                        resetAppointment();
+                    } else {
+                        showToast('خطا در رزرو نوبت', 'error');
+                    }
+                } else {
+                    showToast('نوبت رزرو شد (حالت نمایشی)', 'success');
+                    resetAppointment();
+                }
+            } catch (error) {
+                showToast('خطا در رزرو نوبت', 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '✅ تایید و رزرو نوبت';
+        }
+
+        // Reset appointment
+        function resetAppointment() {
+            document.getElementById('appointmentForm').reset();
+            document.getElementById('step-doctor').classList.add('hidden');
+            document.getElementById('step-form').classList.add('hidden');
+            
+            selectedSpecialty = null;
+            selectedDoctor = null;
+            selectedTime = null;
+            
+            document.querySelectorAll('.specialty-selected').forEach(el => {
+                el.classList.remove('specialty-selected');
+            });
+            
+            // Scroll back to top
+            document.getElementById('step-specialty').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Render records
+        function renderRecords() {
+            const recordsList = document.getElementById('records-list');
+            
+            if (allRecords.length === 0) {
+                recordsList.innerHTML = `
+                    <div class="text-center py-16">
+                        <div class="text-6xl mb-4">📋</div>
+                        <h3 class="text-2xl font-bold text-gray-600 mb-2">هنوز سابقه‌ای ثبت نشده</h3>
+                        <p class="text-gray-500">پس از رزرو نوبت، سوابق شما در اینجا نمایش داده می‌شود</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedRecords = allRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            recordsList.innerHTML = sortedRecords.map(record => `
+                <div class="slide-in bg-white rounded-xl shadow-lg p-6 border-r-4 border-blue-500">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-2xl font-bold text-gray-800 mb-1">${record.name}</h4>
+                            <p class="text-gray-600">سن: ${record.age} سال | شناسه: ${record.patient_id}</p>
+                        </div>
+                        <div class="text-left">
+                            <span class="inline-block px-4 py-2 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
+                                📅 نوبت
+                            </span>
+                            <p class="text-sm text-gray-500 mt-2">${new Date(record.timestamp).toLocaleString('fa-IR')}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">تخصص:</span>
+                                <span class="text-gray-800">${record.specialty}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">پزشک:</span>
+                                <span class="text-gray-800">${record.doctor}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">تاریخ:</span>
+                                <span class="text-gray-800">${record.appointment_date}</span>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">ساعت:</span>
+                                <span class="text-gray-800">${record.appointment_time}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">تلفن:</span>
+                                <span class="text-gray-800">${record.phone}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">وضعیت:</span>
+                                <span class="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">${record.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <span class="font-semibold text-gray-700">علت مراجعه:</span>
+                        <p class="text-gray-800 mt-1">${record.symptoms}</p>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button onclick="deleteRecord('${record.__backendId}')" 
+                                class="text-red-600 hover:text-red-800 font-semibold px-4 py-2 rounded-lg hover:bg-red-50 transition-all">
+                            🗑️ حذف رکورد
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Delete record
+        async function deleteRecord(backendId) {
+            const record = allRecords.find(r => r.__backendId === backendId);
+            if (!record || !window.dataSdk) return;
+
+            try {
+                const result = await window.dataSdk.delete(record);
+                if (result.isOk) {
+                    showToast('رکورد با موفقیت حذف شد', 'success');
+                } else {
+                    showToast('خطا در حذف رکورد', 'error');
+                }
+            } catch (error) {
+                showToast('خطا در حذف رکورد', 'error');
+            }
+        }
+
+        // Filter records
+        function filterRecords() {
+            const filter = document.getElementById('recordFilter').value;
+            const search = document.getElementById('searchRecords').value.toLowerCase();
+            
+            let filteredRecords = allRecords;
+            
+            if (filter !== 'all') {
+                filteredRecords = filteredRecords.filter(record => record.type === filter);
+            }
+            
+            if (search) {
+                filteredRecords = filteredRecords.filter(record => 
+                    record.name.toLowerCase().includes(search) ||
+                    record.symptoms.toLowerCase().includes(search) ||
+                    (record.specialty && record.specialty.toLowerCase().includes(search)) ||
+                    (record.doctor && record.doctor.toLowerCase().includes(search))
+                );
+            }
+            
+            const recordsList = document.getElementById('records-list');
+            if (filteredRecords.length === 0) {
+                recordsList.innerHTML = `
+                    <div class="text-center py-16">
+                        <div class="text-6xl mb-4">🔍</div>
+                        <h3 class="text-2xl font-bold text-gray-600 mb-2">نتیجه‌ای یافت نشد</h3>
+                        <p class="text-gray-500">لطفاً کلمات کلیدی دیگری امتحان کنید</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Re-render with filtered records
+            const sortedRecords = filteredRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            recordsList.innerHTML = sortedRecords.map(record => `
+                <div class="slide-in bg-white rounded-xl shadow-lg p-6 border-r-4 border-blue-500">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-2xl font-bold text-gray-800 mb-1">${record.name}</h4>
+                            <p class="text-gray-600">سن: ${record.age} سال | شناسه: ${record.patient_id}</p>
+                        </div>
+                        <div class="text-left">
+                            <span class="inline-block px-4 py-2 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
+                                📅 نوبت
+                            </span>
+                            <p class="text-sm text-gray-500 mt-2">${new Date(record.timestamp).toLocaleString('fa-IR')}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">تخصص:</span>
+                                <span class="text-gray-800">${record.specialty}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">پزشک:</span>
+                                <span class="text-gray-800">${record.doctor}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">تاریخ:</span>
+                                <span class="text-gray-800">${record.appointment_date}</span>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">ساعت:</span>
+                                <span class="text-gray-800">${record.appointment_time}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">تلفن:</span>
+                                <span class="text-gray-800">${record.phone}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-gray-700 ml-2">وضعیت:</span>
+                                <span class="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">${record.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <span class="font-semibold text-gray-700">علت مراجعه:</span>
+                        <p class="text-gray-800 mt-1">${record.symptoms}</p>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button onclick="deleteRecord('${record.__backendId}')" 
+                                class="text-red-600 hover:text-red-800 font-semibold px-4 py-2 rounded-lg hover:bg-red-50 transition-all">
+                            🗑️ حذف رکورد
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show toast message
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-6 left-6 px-6 py-4 rounded-lg text-white z-50 font-semibold shadow-lg ${
+                type === 'success' ? 'bg-green-600' : 
+                type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+            }`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Initialize chat
+        function initializeChat() {
+            const chatMessages = document.getElementById('chat-messages');
+            // Reset to initial message if needed
+            if (chatMessages.children.length === 1) {
+                // Chat is already initialized
+                return;
+            }
+        }
+
+        // Quick consultation
+        function quickConsultation(topic) {
+            const userMessage = `سوال درباره ${topic}`;
+            addUserMessage(userMessage);
+            
+            setTimeout(() => {
+                if (aiResponses[topic]) {
+                    addAIMessage(aiResponses[topic].response);
+                    
+                    // Add follow-up questions
+                    setTimeout(() => {
+                        addFollowUpQuestions(aiResponses[topic].followUp);
+                    }, 1000);
+                } else {
+                    addAIMessage('متأسفانه اطلاعات کاملی درباره این موضوع در دسترس نیست. لطفاً با پزشک مشورت کنید.');
+                }
+            }, 1000);
+        }
+
+        // Send message
+        function sendMessage(event) {
+            event.preventDefault();
+            
+            const messageInput = document.getElementById('userMessage');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            addUserMessage(message);
+            messageInput.value = '';
+            
+            // Simulate AI thinking
+            const btn = document.getElementById('sendMessageBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner ml-2"></div> در حال پردازش...';
+            
+            setTimeout(() => {
+                processAIResponse(message);
+                btn.disabled = false;
+                btn.innerHTML = '📤 ارسال';
+            }, 2000);
+        }
+
+        // Add user message
+        function addUserMessage(message) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3 space-x-reverse mb-4 justify-end';
+            messageDiv.innerHTML = `
+                <div class="bg-blue-600 text-white rounded-lg p-4 shadow-sm max-w-md">
+                    <p>${message}</p>
+                </div>
+                <div class="text-2xl">👤</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add AI message
+        function addAIMessage(message) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3 space-x-reverse mb-4';
+            messageDiv.innerHTML = `
+                <div class="text-2xl">🤖</div>
+                <div class="bg-white rounded-lg p-4 shadow-sm max-w-md">
+                    <p class="whitespace-pre-line">${message}</p>
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add follow-up questions
+        function addFollowUpQuestions(questions) {
+            const chatMessages = document.getElementById('chat-messages');
+            const questionsDiv = document.createElement('div');
+            questionsDiv.className = 'flex items-start space-x-3 space-x-reverse mb-4';
+            questionsDiv.innerHTML = `
+                <div class="text-2xl">🤖</div>
+                <div class="bg-gray-100 rounded-lg p-4 shadow-sm max-w-md">
+                    <p class="text-sm text-gray-600 mb-3">سوالات تکمیلی:</p>
+                    <div class="space-y-2">
+                        ${questions.map(q => `
+                            <button onclick="quickAnswer('${q}')" 
+                                    class="block w-full text-right text-sm bg-white hover:bg-blue-50 border border-gray-200 rounded-lg p-2 transition-all">
+                                ${q}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(questionsDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Quick answer
+        function quickAnswer(question) {
+            addUserMessage(question);
+            
+            setTimeout(() => {
+                let response = 'بر اساس پاسخ شما، ';
+                
+                if (question.includes('شدت') || question.includes('شدید')) {
+                    response += 'اگر درد یا علائم شدید است، توصیه می‌کنم هر چه سریع‌تر با پزشک مشورت کنید. در غیر این صورت می‌توانید از روش‌های خانگی استفاده کنید.';
+                } else if (question.includes('مدت') || question.includes('وقت')) {
+                    response += 'اگر علائم بیش از چند روز ادامه دارد یا بدتر می‌شود، حتماً با پزشک مشورت کنید.';
+                } else if (question.includes('علائم دیگر')) {
+                    response += 'اگر علائم دیگری مثل تب، تنگی نفس، یا درد شدید دارید، فوراً با پزشک تماس بگیرید.';
+                } else {
+                    response += 'بر اساس اطلاعاتی که دادید، بهتر است با پزشک مشورت کنید تا تشخیص دقیق‌تری داشته باشید.';
+                }
+                
+                response += '\n\n💡 **یادآوری مهم:** این مشاوره جایگزین ویزیت پزشک نیست و برای تشخیص قطعی باید حتماً با متخصص مشورت کنید.';
+                
+                addAIMessage(response);
+            }, 1500);
+        }
+
+        // API Configuration - متصل به OpenAI
+        const API_CONFIG = {
+            endpoint: 'https://api.openai.com/v1/chat/completions',
+            key: 'sk-jKJb3oeEKvd1ZSNG9ucaCqtsmMyi69L3OjV2IcKFqLkgtYXX'
+        };
+
+        // Process AI response with real API
+        async function processAIResponse(message) {
+            try {
+                // اگر API کانفیگ شده باشد، از API واقعی استفاده کن
+                if (API_CONFIG.key !== 'YOUR_API_KEY_HERE') {
+                    const aiResponse = await callRealAPI(message);
+                    addAIMessage(aiResponse);
+                    return;
+                }
+                
+                // در غیر این صورت از پاسخ‌های از پیش تعریف شده استفاده کن
+                const lowerMessage = message.toLowerCase();
+                let response = '';
+                
+                // Check for keywords in user message
+                if (lowerMessage.includes('سردرد') || lowerMessage.includes('سر درد')) {
+                    response = aiResponses['سردرد'].response;
+            } else if (lowerMessage.includes('تب') || lowerMessage.includes('تبی')) {
+                response = aiResponses['تب'].response;
+            } else if (lowerMessage.includes('سرفه') || lowerMessage.includes('کحه')) {
+                response = aiResponses['سرفه'].response;
+            } else if (lowerMessage.includes('شکم') || lowerMessage.includes('معده')) {
+                response = aiResponses['درد شکم'].response;
+            } else if (lowerMessage.includes('خستگی') || lowerMessage.includes('خسته')) {
+                response = aiResponses['خستگی'].response;
+            } else if (lowerMessage.includes('مفصل') || lowerMessage.includes('استخوان') || lowerMessage.includes('زانو')) {
+                response = aiResponses['درد مفاصل'].response;
+            } else if (lowerMessage.includes('اورژانس') || lowerMessage.includes('فوری')) {
+                response = `🚨 **موارد اورژانسی:**
+
+اگر یکی از این علائم را دارید، فوراً با اورژانس تماس بگیرید:
+
+• درد شدید قفسه سینه
+• تنگی نفس شدید  
+• از دست دادن هوشیاری
+• خونریزی شدید
+• درد شدید شکم
+• علائم سکته (اختلال صحبت، فلج)
+• تب بالای 40 درجه
+• تشنج
+
+📞 **شماره اورژانس: 115**
+
+برای سایر موارد، لطفاً علائم خود را دقیق‌تر توضیح دهید.`;
+            } else {
+                response = `متشکرم که سوال خود را مطرح کردید. 
+
+برای ارائه راهنمایی بهتر، لطفاً علائم خود را دقیق‌تر توضیح دهید:
+
+🔹 **مثال‌هایی از سوالات مناسب:**
+• "سردرد دارم و چشمانم حساس به نور است"
+• "از دیروز تب دارم و سرفه می‌کنم"
+• "درد شکم دارم و حالت تهوع"
+• "خستگی مداوم و کم‌حوصلگی"
+
+یا می‌توانید از موضوعات پرتکرار بالا استفاده کنید.
+
+⚠️ **یادآوری:** این مشاوره جایگزین ویزیت پزشک نیست.`;
+            }
+            
+            addAIMessage(response);
+            } catch (error) {
+                console.error('خطا در پردازش پاسخ:', error);
+                addAIMessage('متأسفانه در حال حاضر امکان پاسخگویی وجود ندارد. لطفاً دوباره تلاش کنید.');
+            }
+        }
+
+        // تابع اتصال به OpenAI API
+        async function callRealAPI(message) {
+            try {
+                const response = await fetch(API_CONFIG.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_CONFIG.key}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'شما یک دستیار پزشکی هوشمند هستید که به زبان فارسی پاسخ می‌دهید. اطلاعات پزشکی دقیق و مفید ارائه دهید اما همیشه یادآوری کنید که این مشاوره جایگزین ویزیت پزشک نیست.'
+                            },
+                            {
+                                role: 'user',
+                                content: message
+                            }
+                        ],
+                        max_tokens: 800,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`OpenAI API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    return data.choices[0].message.content;
+                } else {
+                    throw new Error('پاسخ نامعتبر از API');
+                }
+                
+            } catch (error) {
+                console.error('خطا در اتصال به OpenAI API:', error);
+                throw error;
+            }
+        }
+
+        // Show AI Feature
+        function showAIFeature(featureName) {
+            // Hide all AI features
+            document.querySelectorAll('.ai-feature-content').forEach(feature => {
+                feature.classList.add('hidden');
+            });
+
+            // Remove active class from all AI tabs
+            document.querySelectorAll('[id^="ai-tab-"]').forEach(tab => {
+                tab.className = 'ai-tab-inactive px-6 py-3 font-semibold rounded-lg transition-all';
+            });
+
+            // Show selected feature
+            document.getElementById(`ai-feature-${featureName}`).classList.remove('hidden');
+            document.getElementById(`ai-tab-${featureName}`).className = 'ai-tab-active px-6 py-3 font-semibold rounded-lg transition-all';
+
+            currentAIFeature = featureName;
+
+            // Initialize feature-specific content
+            if (featureName === 'symptom-checker') {
+                loadSymptomCheckboxes();
+                setupSeveritySlider();
+            } else if (featureName === 'health-tips') {
+                setupHealthTipsForm();
+            }
+        }
+
+        // Load symptom checkboxes
+        function loadSymptomCheckboxes() {
+            const container = document.getElementById('symptom-checkboxes');
+            container.innerHTML = symptomsDatabase.map(symptom => `
+                <label class="flex items-center space-x-3 space-x-reverse p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-all cursor-pointer">
+                    <input type="checkbox" value="${symptom.id}" class="symptom-checkbox">
+                    <span class="text-sm font-medium">${symptom.name}</span>
+                </label>
+            `).join('');
+        }
+
+        // Setup severity slider
+        function setupSeveritySlider() {
+            const slider = document.getElementById('symptomSeverity');
+            const valueDisplay = document.getElementById('severityValue');
+            
+            slider.addEventListener('input', function() {
+                valueDisplay.textContent = this.value;
+            });
+        }
+
+        // Analyze symptoms
+        async function analyzeSymptoms(event) {
+            event.preventDefault();
+            
+            const selectedSymptoms = Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(cb => cb.value);
+            const age = document.getElementById('symptomAge').value;
+            const gender = document.getElementById('symptomGender').value;
+            const duration = document.getElementById('symptomDuration').value;
+            const severity = document.getElementById('symptomSeverity').value;
+            
+            if (selectedSymptoms.length === 0) {
+                showToast('لطفاً حداقل یک علامت انتخاب کنید', 'error');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('symptom-results');
+            resultsDiv.classList.remove('hidden');
+            
+            // نمایش لودینگ
+            resultsDiv.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600">در حال تحلیل علائم با هوش مصنوعی...</p>
+                </div>
+            `;
+            
+            try {
+                // تحلیل با API واقعی یا محلی
+                let analysis = await generateSymptomAnalysisWithAPI(selectedSymptoms, age, gender, duration, severity);
+            
+            resultsDiv.innerHTML = `
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <h4 class="text-xl font-bold text-gray-800 mb-2">🔍 نتایج تحلیل علائم</h4>
+                        <p class="text-gray-600">بر اساس اطلاعات وارد شده</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-6 border border-blue-200">
+                        <h5 class="font-bold text-blue-800 mb-3">احتمالی‌ترین علل:</h5>
+                        <div class="space-y-2">
+                            ${analysis.causes.map(cause => `
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <span class="font-medium">${cause.name}</span>
+                                    <span class="text-sm bg-blue-600 text-white px-2 py-1 rounded-full">${cause.probability}%</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-6 border border-green-200">
+                        <h5 class="font-bold text-green-800 mb-3">توصیه‌های اولیه:</h5>
+                        <ul class="space-y-2">
+                            ${analysis.recommendations.map(rec => `
+                                <li class="flex items-start space-x-3 space-x-reverse">
+                                    <span class="text-green-600 mt-1">✓</span>
+                                    <span>${rec}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-6 border border-purple-200">
+                        <h5 class="font-bold text-purple-800 mb-3">پیشنهاد تخصص:</h5>
+                        <div class="flex items-center space-x-4 space-x-reverse">
+                            <div class="text-3xl">${analysis.specialty.icon}</div>
+                            <div>
+                                <div class="font-semibold">${analysis.specialty.name}</div>
+                                <div class="text-sm text-gray-600">${analysis.specialty.reason}</div>
+                            </div>
+                            <button onclick="bookWithSpecialty('${analysis.specialty.id}')" 
+                                    class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all">
+                                رزرو نوبت
+                            </button>
+                        </div>
+                    </div>
+                    
+                    ${analysis.urgency === 'high' ? `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <span class="text-2xl">🚨</span>
+                                <div>
+                                    <h5 class="font-bold text-red-800">توجه فوری!</h5>
+                                    <p class="text-red-700">با توجه به شدت علائم، توصیه می‌شود هر چه سریع‌تر با پزشک مشورت کنید.</p>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${analysis.apiResponse ? `
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <h5 class="font-bold text-gray-800 mb-2">🤖 پاسخ کامل هوش مصنوعی:</h5>
+                            <div class="text-sm text-gray-700 whitespace-pre-line">${analysis.apiResponse}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            } catch (error) {
+                console.error('خطا در تحلیل علائم:', error);
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <span class="text-2xl">⚠️</span>
+                        <h5 class="font-bold text-red-800 mb-2">خطا در تحلیل</h5>
+                        <p class="text-red-700">متأسفانه امکان تحلیل علائم در حال حاضر وجود ندارد. لطفاً دوباره تلاش کنید.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // تحلیل علائم با OpenAI API
+        async function generateSymptomAnalysisWithAPI(symptoms, age, gender, duration, severity) {
+            try {
+                const symptomNames = symptoms.map(s => symptomsDatabase.find(sym => sym.id === s)?.name).join(', ');
+                const prompt = `تحلیل علائم پزشکی:
+
+علائم: ${symptomNames}
+سن: ${age}
+جنسیت: ${gender}
+مدت زمان علائم: ${duration}
+شدت علائم: ${severity}/10
+
+لطفاً یک تحلیل کامل و دقیق ارائه دهید که شامل موارد زیر باشد:
+
+1. احتمالی‌ترین علل این علائم (با ذکر درصد احتمال تقریبی)
+2. توصیه‌های اولیه برای مراقبت در منزل
+3. پیشنهاد مناسب‌ترین تخصص پزشکی برای مراجعه
+4. میزان فوریت (کم، متوسط، زیاد)
+5. علائم هشداردهنده که نیاز به مراجعه فوری دارند
+
+لطفاً پاسخ را به زبان فارسی و به صورت ساختاریافته ارائه دهید.`;
+
+                const apiResponse = await callRealAPI(prompt);
+                return parseAPISymptomResponse(apiResponse, symptoms);
+            } catch (error) {
+                console.error('خطا در تحلیل علائم با OpenAI API:', error);
+                showToast('خطا در اتصال به هوش مصنوعی، از تحلیل محلی استفاده می‌شود', 'error');
+                return generateSymptomAnalysisLocal(symptoms, age, gender, duration, severity);
+            }
+        }
+
+        // تحلیل محلی علائم (تابع قبلی)
+        function generateSymptomAnalysisLocal(symptoms, age, gender, duration, severity) {
+            let causes = [];
+            let recommendations = [];
+            let specialty = { name: 'پزشک عمومی', icon: '🩺', id: 'internal', reason: 'بررسی اولیه' };
+            let urgency = 'low';
+            
+            // Analyze based on symptoms
+            if (symptoms.includes('headache')) {
+                causes.push({ name: 'سردرد تنشی', probability: 70 });
+                causes.push({ name: 'میگرن', probability: 25 });
+                recommendations.push('استراحت در محیط تاریک و آرام');
+                recommendations.push('مصرف مایعات کافی');
+                specialty = { name: 'مغز و اعصاب', icon: '🧠', id: 'neurology', reason: 'تخصص در سردردهای مزمن' };
+            }
+            
+            if (symptoms.includes('chest-pain')) {
+                causes.push({ name: 'درد عضلانی', probability: 40 });
+                causes.push({ name: 'مشکل قلبی', probability: 30 });
+                urgency = 'high';
+                specialty = { name: 'قلب و عروق', icon: '❤️', id: 'cardiology', reason: 'بررسی فوری قلب' };
+            }
+            
+            if (symptoms.includes('fever') && symptoms.includes('cough')) {
+                causes.push({ name: 'عفونت تنفسی', probability: 80 });
+                causes.push({ name: 'آنفولانزا', probability: 60 });
+                recommendations.push('استراحت کامل');
+                recommendations.push('مصرف مایعات گرم');
+            }
+            
+            // Adjust based on severity
+            if (severity >= 8) {
+                urgency = 'high';
+                recommendations.unshift('مراجعه فوری به پزشک');
+            }
+            
+            // Default recommendations
+            if (recommendations.length === 0) {
+                recommendations = [
+                    'مراقبت از خود و استراحت کافی',
+                    'مصرف مایعات فراوان',
+                    'در صورت تداوم علائم، با پزشک مشورت کنید'
+                ];
+            }
+            
+            return { causes, recommendations, specialty, urgency };
+        }
+
+        // تجزیه پاسخ OpenAI API برای تحلیل علائم
+        function parseAPISymptomResponse(apiResponse, symptoms) {
+            try {
+                const response = typeof apiResponse === 'string' ? apiResponse : JSON.stringify(apiResponse);
+                
+                // استخراج اطلاعات از پاسخ متنی OpenAI
+                let causes = [
+                    { name: 'تحلیل هوش مصنوعی', probability: 85 }
+                ];
+                
+                let recommendations = [
+                    'مراجعه به پزشک متخصص',
+                    'پیگیری علائم'
+                ];
+                
+                let specialty = { 
+                    name: 'پزشک عمومی', 
+                    icon: '🩺', 
+                    id: 'internal', 
+                    reason: 'بررسی اولیه' 
+                };
+                
+                let urgency = 'medium';
+                
+                // تحلیل هوشمند پاسخ برای استخراج اطلاعات
+                if (response.includes('فوری') || response.includes('اورژانس') || response.includes('شدید')) {
+                    urgency = 'high';
+                }
+                
+                if (response.includes('قلب') || response.includes('سینه')) {
+                    specialty = { name: 'قلب و عروق', icon: '❤️', id: 'cardiology', reason: 'علائم مرتبط با قلب' };
+                } else if (response.includes('مغز') || response.includes('سردرد') || response.includes('عصب')) {
+                    specialty = { name: 'مغز و اعصاب', icon: '🧠', id: 'neurology', reason: 'علائم عصبی' };
+                } else if (response.includes('استخوان') || response.includes('مفصل')) {
+                    specialty = { name: 'ارتوپدی', icon: '🦴', id: 'orthopedics', reason: 'مشکلات استخوان و مفاصل' };
+                }
+                
+                return {
+                    causes: causes,
+                    recommendations: recommendations,
+                    specialty: specialty,
+                    urgency: urgency,
+                    apiResponse: response
+                };
+            } catch (error) {
+                console.error('خطا در تجزیه پاسخ OpenAI:', error);
+                return generateSymptomAnalysisLocal(symptoms, '', '', '', 5);
+            }
+        }
+
+        // Add drug
+        function addDrug() {
+            const input = document.getElementById('drugInput');
+            const drugName = input.value.trim();
+            
+            if (!drugName) {
+                showToast('لطفاً نام دارو را وارد کنید', 'error');
+                return;
+            }
+            
+            if (addedDrugs.includes(drugName)) {
+                showToast('این دارو قبلاً اضافه شده است', 'error');
+                return;
+            }
+            
+            addedDrugs.push(drugName);
+            input.value = '';
+            
+            updateDrugList();
+            updateInteractionButton();
+        }
+
+        // Update drug list
+        function updateDrugList() {
+            const container = document.getElementById('drug-list');
+            container.innerHTML = addedDrugs.map((drug, index) => `
+                <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <span class="text-2xl">💊</span>
+                        <span class="font-medium">${drug}</span>
+                    </div>
+                    <button onclick="removeDrug(${index})" class="text-red-600 hover:text-red-800 font-semibold">
+                        ❌ حذف
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Remove drug
+        function removeDrug(index) {
+            addedDrugs.splice(index, 1);
+            updateDrugList();
+            updateInteractionButton();
+        }
+
+        // Update interaction button
+        function updateInteractionButton() {
+            const btn = document.getElementById('checkInteractionBtn');
+            btn.disabled = addedDrugs.length < 2;
+        }
+
+        // Check drug interactions
+        function checkDrugInteractions() {
+            if (addedDrugs.length < 2) {
+                showToast('برای بررسی تداخل، حداقل 2 دارو اضافه کنید', 'error');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('interaction-results');
+            resultsDiv.classList.remove('hidden');
+            
+            let interactions = [];
+            let warnings = [];
+            
+            // Check for interactions
+            for (let i = 0; i < addedDrugs.length; i++) {
+                for (let j = i + 1; j < addedDrugs.length; j++) {
+                    const drug1 = addedDrugs[i];
+                    const drug2 = addedDrugs[j];
+                    
+                    if (drugInteractions[drug1] && drugInteractions[drug1].includes(drug2)) {
+                        interactions.push({ drug1, drug2, severity: 'متوسط' });
+                    }
+                }
+            }
+            
+            resultsDiv.innerHTML = `
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <h4 class="text-xl font-bold text-gray-800 mb-2">💊 نتایج بررسی تداخل دارویی</h4>
+                    </div>
+                    
+                    ${interactions.length > 0 ? `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                            <h5 class="font-bold text-red-800 mb-4">⚠️ تداخلات یافت شده:</h5>
+                            <div class="space-y-3">
+                                ${interactions.map(interaction => `
+                                    <div class="bg-white rounded-lg p-4 border border-red-300">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="font-semibold">${interaction.drug1} + ${interaction.drug2}</span>
+                                            <span class="text-sm bg-red-600 text-white px-2 py-1 rounded-full">${interaction.severity}</span>
+                                        </div>
+                                        <p class="text-sm text-red-700">این داروها ممکن است با یکدیگر تداخل داشته باشند. با پزشک مشورت کنید.</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                            <div class="text-4xl mb-3">✅</div>
+                            <h5 class="font-bold text-green-800 mb-2">تداخل خطرناکی یافت نشد</h5>
+                            <p class="text-green-700">داروهای وارد شده در پایگاه داده ما تداخل شناخته شده‌ای ندارند.</p>
+                        </div>
+                    `}
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h5 class="font-bold text-yellow-800 mb-2">⚠️ توجه مهم:</h5>
+                        <ul class="text-yellow-700 space-y-1 text-sm">
+                            <li>• این بررسی بر اساس اطلاعات عمومی است</li>
+                            <li>• حتماً با پزشک یا داروساز مشورت کنید</li>
+                            <li>• هرگز دارو را خودسرانه قطع نکنید</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate health tips
+        function generateHealthTips(event) {
+            event.preventDefault();
+            
+            const age = document.getElementById('tipsAge').value;
+            const gender = document.getElementById('tipsGender').value;
+            const activity = document.getElementById('tipsActivity').value;
+            const conditions = Array.from(document.querySelectorAll('.condition-checkbox:checked')).map(cb => cb.value);
+            
+            if (!age || !gender || !activity) {
+                showToast('لطفاً تمام فیلدهای اجباری را پر کنید', 'error');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('health-tips-results');
+            resultsDiv.classList.remove('hidden');
+            
+            let tips = generatePersonalizedTips(age, gender, activity, conditions);
+            
+            resultsDiv.innerHTML = `
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <h4 class="text-xl font-bold text-gray-800 mb-2">💡 توصیه‌های شخصی‌سازی شده</h4>
+                        <p class="text-gray-600">بر اساس اطلاعات شما</p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 rounded-lg p-6">
+                            <h5 class="font-bold text-blue-800 mb-4">🏃‍♂️ ورزش و فعالیت</h5>
+                            <ul class="space-y-2">
+                                ${tips.exercise.map(tip => `
+                                    <li class="flex items-start space-x-3 space-x-reverse">
+                                        <span class="text-blue-600 mt-1">•</span>
+                                        <span class="text-sm">${tip}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-green-50 rounded-lg p-6">
+                            <h5 class="font-bold text-green-800 mb-4">🥗 تغذیه</h5>
+                            <ul class="space-y-2">
+                                ${tips.nutrition.map(tip => `
+                                    <li class="flex items-start space-x-3 space-x-reverse">
+                                        <span class="text-green-600 mt-1">•</span>
+                                        <span class="text-sm">${tip}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-purple-50 rounded-lg p-6">
+                            <h5 class="font-bold text-purple-800 mb-4">😴 خواب و استراحت</h5>
+                            <ul class="space-y-2">
+                                ${tips.sleep.map(tip => `
+                                    <li class="flex items-start space-x-3 space-x-reverse">
+                                        <span class="text-purple-600 mt-1">•</span>
+                                        <span class="text-sm">${tip}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-orange-50 rounded-lg p-6">
+                            <h5 class="font-bold text-orange-800 mb-4">🩺 بررسی‌های دوره‌ای</h5>
+                            <ul class="space-y-2">
+                                ${tips.checkups.map(tip => `
+                                    <li class="flex items-start space-x-3 space-x-reverse">
+                                        <span class="text-orange-600 mt-1">•</span>
+                                        <span class="text-sm">${tip}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    ${conditions.length > 0 ? `
+                        <div class="bg-red-50 rounded-lg p-6">
+                            <h5 class="font-bold text-red-800 mb-4">⚠️ توصیه‌های ویژه</h5>
+                            <ul class="space-y-2">
+                                ${tips.special.map(tip => `
+                                    <li class="flex items-start space-x-3 space-x-reverse">
+                                        <span class="text-red-600 mt-1">•</span>
+                                        <span class="text-sm">${tip}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    ${analysis.apiResponse ? `
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <h5 class="font-bold text-gray-800 mb-2">🤖 پاسخ کامل هوش مصنوعی:</h5>
+                            <div class="text-sm text-gray-700 whitespace-pre-line">${analysis.apiResponse}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            } catch (error) {
+                console.error('خطا در تحلیل علائم:', error);
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <span class="text-2xl">⚠️</span>
+                        <h5 class="font-bold text-red-800 mb-2">خطا در تحلیل</h5>
+                        <p class="text-red-700">متأسفانه امکان تحلیل علائم در حال حاضر وجود ندارد. لطفاً دوباره تلاش کنید.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Generate personalized tips
+        function generatePersonalizedTips(age, gender, activity, conditions) {
+            let tips = {
+                exercise: [],
+                nutrition: [],
+                sleep: [],
+                checkups: [],
+                special: []
+            };
+            
+            // Age-based recommendations
+            if (age < 30) {
+                tips.exercise.push('ورزش‌های قدرتی 3 بار در هفته');
+                tips.nutrition.push('مصرف کافی پروتئین برای رشد عضلات');
+                tips.checkups.push('بررسی سالانه عمومی');
+            } else if (age >= 30 && age < 50) {
+                tips.exercise.push('ترکیب ورزش هوازی و قدرتی');
+                tips.nutrition.push('کاهش مصرف قند و نمک');
+                tips.checkups.push('بررسی فشار خون هر 2 سال');
+            } else {
+                tips.exercise.push('ورزش‌های کم‌فشار مثل پیاده‌روی');
+                tips.nutrition.push('مصرف کلسیم و ویتامین D');
+                tips.checkups.push('بررسی‌های دوره‌ای هر 6 ماه');
+            }
+            
+            // Gender-based recommendations
+            if (gender === 'female') {
+                tips.nutrition.push('مصرف آهن و اسید فولیک');
+                tips.checkups.push('ماموگرافی سالانه (بالای 40 سال)');
+            }
+            
+            // Activity-based recommendations
+            if (activity === 'low') {
+                tips.exercise.push('شروع با 15 دقیقه پیاده‌روی روزانه');
+                tips.exercise.push('استفاده از پله به جای آسانسور');
+            } else if (activity === 'high') {
+                tips.exercise.push('توجه به استراحت بین تمرینات');
+                tips.nutrition.push('مصرف کافی کربوهیدرات');
+            }
+            
+            // Sleep recommendations
+            tips.sleep.push('خواب 7-8 ساعته شبانه');
+            tips.sleep.push('اجتناب از کافئین 6 ساعت قبل خواب');
+            
+            // Condition-based special recommendations
+            conditions.forEach(condition => {
+                if (condition === 'diabetes') {
+                    tips.special.push('کنترل قند خون روزانه');
+                    tips.special.push('رژیم غذایی کم‌قند');
+                } else if (condition === 'hypertension') {
+                    tips.special.push('کاهش مصرف نمک');
+                    tips.special.push('مدیریت استرس');
+                }
+            });
+            
+            return tips;
+        }
+
+        // Generate appointment suggestion
+        function generateAppointmentSuggestion(event) {
+            event.preventDefault();
+            
+            const symptoms = document.getElementById('suggestionSymptoms').value.trim();
+            const urgency = document.getElementById('suggestionUrgency').value;
+            const history = document.getElementById('suggestionHistory').value;
+            
+            if (!symptoms) {
+                showToast('لطفاً علائم خود را شرح دهید', 'error');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('suggestion-results');
+            resultsDiv.classList.remove('hidden');
+            
+            let suggestion = analyzeForSpecialty(symptoms, urgency, history);
+            
+            resultsDiv.innerHTML = `
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <h4 class="text-xl font-bold text-gray-800 mb-2">🎯 پیشنهاد تخصص</h4>
+                        <p class="text-gray-600">بر اساس تحلیل علائم شما</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
+                        <div class="flex items-center space-x-4 space-x-reverse mb-4">
+                            <div class="text-4xl">${suggestion.specialty.icon}</div>
+                            <div>
+                                <h5 class="text-xl font-bold text-purple-800">${suggestion.specialty.name}</h5>
+                                <p class="text-purple-600">${suggestion.specialty.description}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg p-4 mb-4">
+                            <h6 class="font-semibold text-gray-800 mb-2">دلیل پیشنهاد:</h6>
+                            <p class="text-gray-700">${suggestion.reason}</p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-4">
+                            ${suggestion.doctors.map(doctor => `
+                                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                    <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                                        <span class="text-2xl">👨‍⚕️</span>
+                                        <div>
+                                            <div class="font-semibold">${doctor.name}</div>
+                                            <div class="text-sm text-gray-600">${doctor.specialty}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-500">${doctor.experience}</span>
+                                        <button onclick="selectDoctor('${doctor.id}', '${doctor.name}')" 
+                                                class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition-all">
+                                            انتخاب
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <button onclick="bookWithSpecialty('${suggestion.specialty.id}')" 
+                                    class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all">
+                                📅 رزرو نوبت با این تخصص
+                            </button>
+                        </div>
+                    </div>
+                    
+                    ${urgency === 'emergency' ? `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <span class="text-2xl">🚨</span>
+                                <div>
+                                    <h5 class="font-bold text-red-800">اورژانس!</h5>
+                                    <p class="text-red-700">با توجه به اولویت اورژانسی، فوراً با بیمارستان تماس بگیرید: 115</p>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${analysis.apiResponse ? `
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <h5 class="font-bold text-gray-800 mb-2">🤖 پاسخ کامل هوش مصنوعی:</h5>
+                            <div class="text-sm text-gray-700 whitespace-pre-line">${analysis.apiResponse}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            } catch (error) {
+                console.error('خطا در تحلیل علائم:', error);
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <span class="text-2xl">⚠️</span>
+                        <h5 class="font-bold text-red-800 mb-2">خطا در تحلیل</h5>
+                        <p class="text-red-700">متأسفانه امکان تحلیل علائم در حال حاضر وجود ندارد. لطفاً دوباره تلاش کنید.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Analyze for specialty
+        function analyzeForSpecialty(symptoms, urgency, history) {
+            const lowerSymptoms = symptoms.toLowerCase();
+            let specialty = specialtiesData[0]; // Default to cardiology
+            let reason = 'بر اساس علائم توصیف شده';
+            
+            // Analyze symptoms for specialty
+            if (lowerSymptoms.includes('سردرد') || lowerSymptoms.includes('سرگیجه') || lowerSymptoms.includes('مغز')) {
+                specialty = specialtiesData.find(s => s.id === 'neurology');
+                reason = 'علائم مرتبط با سیستم عصبی شناسایی شد';
+            } else if (lowerSymptoms.includes('قلب') || lowerSymptoms.includes('سینه') || lowerSymptoms.includes('نفس')) {
+                specialty = specialtiesData.find(s => s.id === 'cardiology');
+                reason = 'علائم مرتبط با قلب و عروق شناسایی شد';
+            } else if (lowerSymptoms.includes('استخوان') || lowerSymptoms.includes('مفصل') || lowerSymptoms.includes('کمر')) {
+                specialty = specialtiesData.find(s => s.id === 'orthopedics');
+                reason = 'علائم مرتبط با استخوان و مفاصل شناسایی شد';
+            } else if (lowerSymptoms.includes('پوست') || lowerSymptoms.includes('مو') || lowerSymptoms.includes('جوش')) {
+                specialty = specialtiesData.find(s => s.id === 'dermatology');
+                reason = 'علائم مرتبط با پوست و مو شناسایی شد';
+            }
+            
+            return {
+                specialty: specialty,
+                reason: reason,
+                doctors: specialty.doctors
+            };
+        }
+
+        // Setup health tips form
+        function setupHealthTipsForm() {
+            document.getElementById('healthTipsForm').addEventListener('submit', generateHealthTips);
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSDKs();
+            updateTime();
+            setInterval(updateTime, 60000);
+            
+            // Setup form submissions
+            document.getElementById('appointmentForm').addEventListener('submit', bookAppointment);
+            document.getElementById('consultationForm').addEventListener('submit', sendMessage);
+            document.getElementById('symptomForm').addEventListener('submit', analyzeSymptoms);
+            document.getElementById('suggestionForm').addEventListener('submit', generateAppointmentSuggestion);
+            
+            // Initialize first section
+            showSection('home');
+            updateStats();
+        });
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99f841329528a078',t:'MTc2MzMwOTM4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
